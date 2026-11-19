@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Cram-Kit: transcripts, slides and a Claude study project</title>
-<meta name="description" content="Download every Panopto lecture transcript and Canvas slide deck in one click, then turn them into a Claude study project.">
+<meta name="description" content="Download Panopto transcripts and Canvas slides in one click, turn them into a Claude study project, analyze past papers, make practice exams and Anki flashcards.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232f5d50'/%3E%3Cpath d='M16 7v12m-5-5 5 5 5-5M9 24h14' stroke='white' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
 <style>
   :root{--bg:#f6f4ef;--ink:#1b1b1a;--muted:#6b6862;--line:#dcd8cf;--card:#fffdf8;--accent:#2f5d50;--accent-ink:#fff;--soft:#e4efe9;--warn:#8a4a12;--warn-bg:#fdf1de;--tip-bg:#eaf2fb;--tip:#1f4d80}
@@ -22,7 +22,7 @@
   kbd{border-bottom:2px solid var(--muted)}
 
   /* tabs */
-  .tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:6px;position:sticky;top:10px;z-index:5;box-shadow:0 6px 20px rgba(0,0,0,.06)}
+  .tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:6px;position:sticky;top:10px;z-index:5;box-shadow:0 6px 20px rgba(0,0,0,.06)}
   .tab{border:0;background:transparent;color:var(--ink);font:inherit;text-align:left;padding:12px 14px;border-radius:11px;cursor:pointer}
   .tab b{display:block;font-size:16px}
   .tab span{display:block;font-size:13.5px;color:var(--muted)}
@@ -92,17 +92,58 @@
   .drop{border:1.5px dashed var(--line);border-radius:12px;padding:20px;text-align:center;color:var(--muted);font-size:15px;cursor:pointer;margin-top:10px}
   .drop.over{border-color:var(--accent);color:var(--accent)}
   footer{margin-top:50px;color:var(--muted);font-size:13.5px;text-align:center}
-  @media (max-width:560px){h1{font-size:28px}.tab span{display:none}.step{padding:18px 16px}}
+
+  /* sub-tabs (Anki) */
+  .subtabs{display:flex;gap:6px;margin:22px 0 14px;border-bottom:1px solid var(--line)}
+  .subtab{border:0;background:transparent;color:var(--muted);font:inherit;font-weight:600;padding:10px 14px;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px}
+  .subtab[aria-selected=true]{color:var(--ink);border-bottom-color:var(--accent)}
+  .subtab:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+  /* forms */
+  .q{margin:14px 0 4px}
+  .q>label,.q>.ql{display:block;font-weight:600;font-size:15px;margin-bottom:6px}
+  .q small{display:block;color:var(--muted);font-size:13.5px;margin:-3px 0 6px}
+  .q select,.q input[type=date],.q input[type=number],.q input[type=text]{width:100%;max-width:340px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:inherit}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:4px 16px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chips label{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:14.5px;cursor:pointer;background:var(--bg)}
+  .chips input{accent-color:var(--accent);margin:0}
+  .chips label:has(input:checked){border-color:var(--accent);background:var(--soft)}
+  .chips label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:1px}
+  .out{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-top:14px}
+  .out h4{margin:0 0 6px;font-size:16px}
+  .out ol,.out ul{margin:6px 0;padding-left:22px}
+  .out li{margin:5px 0;font-size:15px}
+  table.cmp td:first-child{white-space:nowrap}
+  table.cmp td b{font-family:ui-monospace,Menlo,monospace;font-size:14px}
+
+  /* SUPER CRAM */
+  .cram-wrap{text-align:center;margin:6px 0 16px}
+  .cram{position:relative;border:0;cursor:pointer;font:800 22px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.08em;color:#fff;padding:18px 34px;border-radius:999px;
+    background:linear-gradient(90deg,#ff3b3b,#ff9f1a,#ffe11a,#2fd36b,#1aa3ff,#7a5cff,#ff3bd4,#ff3b3b);background-size:300% 100%;
+    text-shadow:0 2px 0 rgba(0,0,0,.35);box-shadow:0 6px 22px rgba(255,80,160,.45);animation:rainbow 2.5s linear infinite,wobble 1.6s ease-in-out infinite}
+  .cram:hover{animation-duration:1s,.5s}
+  .cram:focus-visible{outline:4px solid var(--ink);outline-offset:3px}
+  .cram[aria-pressed=true]{box-shadow:0 0 0 4px var(--ink),0 6px 22px rgba(255,80,160,.55)}
+  .cram-sub{font-size:13.5px;color:var(--muted);margin-top:8px}
+  @keyframes rainbow{to{background-position:300% 0}}
+  @keyframes wobble{0%,100%{transform:rotate(-2deg) scale(1)}50%{transform:rotate(2deg) scale(1.06)}}
+  @media (prefers-reduced-motion:reduce){.cram{animation:none}}
+  .cram-box{border:2px solid transparent;border-radius:16px;background:linear-gradient(var(--card),var(--card)) padding-box,linear-gradient(90deg,#ff3b3b,#ff9f1a,#ffe11a,#2fd36b,#1aa3ff,#7a5cff,#ff3bd4) border-box}
+  @media (max-width:700px){.tabs{grid-template-columns:1fr 1fr}}
+  @media (max-width:560px){h1{font-size:28px}.tab span{display:none}.step{padding:18px 16px}.grid2{grid-template-columns:1fr}.cram{font-size:19px;padding:16px 26px}}
 </style>
 </head>
 <body>
 <main>
   <h1>Cram-Kit</h1>
-  <p class="lede">Grab every lecture transcript and slide deck in one click each. Then turn them into a Claude tutor that knows what happened in class and what's on the exam.</p>
+  <p class="lede">Grab every lecture transcript and slide deck in one click each. Turn them into a Claude tutor, find the key exam topics from past papers, and make Anki flashcards with a study plan.</p>
 
   <div class="tabs" role="tablist" aria-label="Choose a step">
-    <button class="tab" role="tab" id="t-files" aria-controls="p-files" aria-selected="true"><b>① Gather transcripts &amp; slides</b><span>Two bookmark buttons, one click each</span></button>
-    <button class="tab" role="tab" id="t-project" aria-controls="p-project" aria-selected="false" tabindex="-1"><b>② Create the Claude project</b><span>Turn them into a tutor + study guides</span></button>
+    <button class="tab" role="tab" id="t-files" data-hash="files" aria-controls="p-files" aria-selected="true"><b>① Gather</b><span>Transcripts &amp; slides</span></button>
+    <button class="tab" role="tab" id="t-project" data-hash="project" aria-controls="p-project" aria-selected="false" tabindex="-1"><b>② Claude project</b><span>Tutor + study guides</span></button>
+    <button class="tab" role="tab" id="t-exam" data-hash="exam" aria-controls="p-exam" aria-selected="false" tabindex="-1"><b>③ Exam prep</b><span>Past papers + practice exams</span></button>
+    <button class="tab" role="tab" id="t-anki" data-hash="anki" aria-controls="p-anki" aria-selected="false" tabindex="-1"><b>④ Anki</b><span>Flashcards + study plan</span></button>
   </div>
 
   <!-- ================= TAB 1 ================= -->
@@ -238,31 +279,199 @@
         <li>Replace the doc in the project.</li>
       </ol>
     </div>
+    <p style="margin-top:28px"><a href="#exam">Next: ③ Exam prep →</a></p>
+  </section>
+
+  <!-- ================= TAB 3 ================= -->
+  <section class="panel" id="p-exam" role="tabpanel" aria-labelledby="t-exam" hidden>
+    <div class="call warn" style="margin-top:22px"><b>Practice isn't always like the real exam.</b> Some courses hand out old or off-topic practice. The prompt rates every file and down-weights ones that don't match your course.</div>
+
+    <div class="step" id="e1">
+      <div class="step-head"><div class="num">1</div><div><h3>Collect past papers</h3><p>The more real exams from your prof, the better.</p></div></div>
+      <ul>
+        <li>⭐ Past exams and quizzes from this course and prof (best)</li>
+        <li>Practice midterms, assignment and clicker questions</li>
+        <li>Review sheets, learning objectives, answer keys</li>
+      </ul>
+      <div class="call tip">No past exams? Check your school's exam archive, the course Discord, or ask upper-years.</div>
+    </div>
+
+    <div class="step" id="e2">
+      <div class="step-head"><div class="num">2</div><div><span class="who">New chat in your project</span><h3>Find the key exam topics</h3><p>Ranks topics by how often and how they're tested, and predicts the exam's layout.</p></div></div>
+      <ol>
+        <li>Attach all your past papers. Paste the <b>analysis prompt</b> and fill in the brackets.</li>
+        <li>Save the result as <b>Exam blueprint</b> and add it to the project's files.</li>
+      </ol>
+      <div class="tplname">Analysis prompt</div><div class="acts" data-t="5-exam-analysis-prompt.md"></div>
+    </div>
+
+    <div class="step" id="e3">
+      <div class="step-head"><div class="num">3</div><div><span class="who">New chat in your project</span><h3>Make a practice exam</h3><p>Same format as the real one, with new questions and a separate answer key.</p></div></div>
+      <ol>
+        <li>Paste the <b>practice exam prompt</b>.</li>
+        <li>Do it timed, without notes.</li>
+        <li>Send your answers. Claude marks them and turns every mistake into Anki cards.</li>
+      </ol>
+      <div class="tplname">Practice exam prompt</div><div class="acts" data-t="6-practice-exam-prompt.md"></div>
+      <div class="call tip">Want another? Say <code>Make another one, different questions, more on my weak topics</code>.</div>
+    </div>
+    <p style="margin-top:28px"><a href="#anki">Next: ④ Anki →</a></p>
+  </section>
+
+  <!-- ================= TAB 4 ================= -->
+  <section class="panel" id="p-anki" role="tabpanel" aria-labelledby="t-anki" hidden>
+    <div class="subtabs" role="tablist" aria-label="Anki">
+      <button class="subtab" role="tab" id="st-deck" aria-controls="sp-deck" aria-selected="true">Make the deck</button>
+      <button class="subtab" role="tab" id="st-plan" aria-controls="sp-plan" aria-selected="false" tabindex="-1">Plan + personalize</button>
+    </div>
+
+    <div id="sp-deck" role="tabpanel" aria-labelledby="st-deck">
+      <div class="step" id="a1">
+        <div class="step-head"><div class="num">1</div><div><h3>Get Anki (free)</h3></div></div>
+        <ul>
+          <li>Computer: <a href="https://apps.ankiweb.net" target="_blank" rel="noopener">apps.ankiweb.net</a> · Android: AnkiDroid (free) · iPhone: AnkiMobile (paid)</li>
+          <li>Make a free AnkiWeb account to sync between them.</li>
+        </ul>
+      </div>
+
+      <div class="step" id="a2">
+        <div class="step-head"><div class="num">2</div><div><span class="who">New chat in your project, one per unit</span><h3>Make the cards</h3><p>Exam-ready cards from your context doc and slides, with diagrams.</p></div></div>
+        <ol>
+          <li>Paste the <b>deck prompt</b> and fill in the brackets. Or use your personalized one from <a href="#" data-sub="st-plan">Plan + personalize</a>.</li>
+          <li>Claude gives you an <code>.apkg</code> (if it can run code) and a <code>.txt</code> backup.</li>
+        </ol>
+        <div class="tplname">Deck prompt</div><div class="acts" data-t="4-anki-deck-prompt.md"></div>
+      </div>
+
+      <div class="step" id="a3">
+        <div class="step-head"><div class="num">3</div><div><span class="who">Anki</span><h3>Import</h3></div></div>
+        <ul>
+          <li><b>.apkg:</b> double-click it. Done.</li>
+          <li><b>.txt:</b> <b>File → Import</b>, pick the file, check the deck name, then <b>Import</b>.</li>
+        </ul>
+        <div class="call tip"><b>Diagrams:</b> ones Claude draws work in both files. Slide snapshots only come through in the <code>.apkg</code>. Got only a <code>.txt</code>? Ask <code>Make it an .apkg with the slide images</code>.</div>
+      </div>
+
+      <div class="step" id="a4">
+        <div class="step-head"><div class="num">4</div><div><h3>Set your study settings</h3></div></div>
+        <p style="margin:6px 0">A deck file can't reliably carry its own settings. Anki uses your presets when you import. Setting it yourself takes a minute: <a href="#" data-sub="st-plan">Plan + personalize</a> gives you the exact numbers.</p>
+      </div>
+    </div>
+
+    <div id="sp-plan" role="tabpanel" aria-labelledby="st-plan" hidden>
+      <div class="cram-wrap">
+        <button type="button" class="cram" id="cram" aria-pressed="false">🌈 SUPER CRAM 🌈</button>
+        <div class="cram-sub">Exam tomorrow and you know nothing? Press this.</div>
+      </div>
+
+      <div class="step" id="a5">
+        <div class="step-head"><div class="num">1</div><div><h3>About you and the course</h3><p>Makes a flashcard prompt tuned to your subject and how you study.</p></div></div>
+        <form id="quiz" onsubmit="return false">
+          <div class="grid2">
+            <div class="q"><label for="q-course">Course</label><input type="text" id="q-course" placeholder="e.g. PSYC 101"></div>
+            <div class="q"><label for="q-range">Lectures for this deck</label><input type="text" id="q-range" placeholder="e.g. Lectures 1–4"></div>
+          </div>
+          <div class="q"><label for="q-subject">Subject</label>
+            <select id="q-subject">
+              <option value="bio">Biology / life sciences</option>
+              <option value="chem">Chemistry / biochemistry</option>
+              <option value="phys">Physics / engineering</option>
+              <option value="math">Math / statistics</option>
+              <option value="psych" selected>Psychology / social sciences</option>
+              <option value="hist">History / humanities</option>
+              <option value="lang">Languages</option>
+              <option value="cs">Computer science</option>
+              <option value="bus">Business / economics</option>
+              <option value="med">Medicine / nursing / health</option>
+              <option value="other">Other</option>
+            </select></div>
+          <div class="q"><span class="ql">Exam questions are mostly…</span>
+            <div class="chips" id="q-format">
+              <label><input type="checkbox" value="mc" checked> Multiple choice</label>
+              <label><input type="checkbox" value="sa"> Short answer</label>
+              <label><input type="checkbox" value="calc"> Calculations</label>
+              <label><input type="checkbox" value="diag"> Diagrams / labelling</label>
+              <label><input type="checkbox" value="essay"> Essays</label>
+            </div></div>
+          <div class="q"><span class="ql">Card style</span>
+            <div class="chips">
+              <label><input type="radio" name="style" value="mix" checked> Mix (recommended)</label>
+              <label><input type="radio" name="style" value="cloze"> Fill-in-the-blank</label>
+              <label><input type="radio" name="style" value="basic"> Question → answer</label>
+            </div></div>
+          <div class="q"><span class="ql">How much detail?</span>
+            <div class="chips">
+              <label><input type="radio" name="detail" value="key"> Key ideas only</label>
+              <label><input type="radio" name="detail" value="exam" checked> Exam-ready (recommended)</label>
+              <label><input type="radio" name="detail" value="all"> Everything</label>
+            </div></div>
+          <div class="q"><span class="ql">What's hard for you?</span>
+            <div class="chips" id="q-weak">
+              <label><input type="checkbox" value="terms"> Memorizing terms</label>
+              <label><input type="checkbox" value="process"> Processes / steps</label>
+              <label><input type="checkbox" value="apply"> Applying to new questions</label>
+              <label><input type="checkbox" value="visual"> Diagrams / structures</label>
+              <label><input type="checkbox" value="formulas"> Formulas</label>
+            </div></div>
+          <div class="q"><span class="ql">Diagrams on cards</span>
+            <div class="chips">
+              <label><input type="radio" name="diag" value="both" checked> Both (recommended)</label>
+              <label><input type="radio" name="diag" value="draw"> Drawn by Claude</label>
+              <label><input type="radio" name="diag" value="slides"> Slide snapshots</label>
+              <label><input type="radio" name="diag" value="none"> None</label>
+            </div></div>
+        </form>
+      </div>
+
+      <div class="step" id="a6">
+        <div class="step-head"><div class="num">2</div><div><h3>Your schedule</h3><p>Works out how many cards a day and the Anki settings to use.</p></div></div>
+        <div class="grid2">
+          <div class="q"><label for="s-date">Exam date</label><input type="date" id="s-date"></div>
+          <div class="q"><label for="s-lec">Lectures on the exam</label><input type="number" id="s-lec" min="1" max="80" value="12"></div>
+          <div class="q"><label for="s-days">Study days per week</label>
+            <select id="s-days"><option>3</option><option>4</option><option>5</option><option selected>6</option><option>7</option></select></div>
+          <div class="q"><label for="s-min">Minutes per study day</label><input type="number" id="s-min" min="5" max="600" step="5" value="30"></div>
+        </div>
+        <div id="plan-out"></div>
+      </div>
+
+      <div class="step" id="a7">
+        <div class="step-head"><div class="num">3</div><div><span class="who">New chat in your project</span><h3>Your flashcard prompt</h3><p>Paste it to make the deck. It updates as you change the answers above.</p></div></div>
+        <div class="acts" id="my-acts"></div>
+        <pre class="tp" id="my-pre"></pre>
+      </div>
+    </div>
   </section>
 
   <footer>Cram-Kit · runs in your browser · no data collected</footer>
 </main>
 
-<script type="application/json" id="tpl">{"0-context-doc-skeleton.md":"# [COURSE CODE] Lecture Context: [Prof name], [Term]\n\n> Built from lecture transcripts + slides with the Lecture Context Builder prompt. Timestamps refer to each lecture's recording.\n> **Key:** 🎯 explicit exam signal · ⭐ strong signal · 🔹 implied · 🗣️ said in class, not on slides · 🚫 said not tested\n\n## Course & exam facts\n- **Assessments:** [e.g. MT1 (date, chapters, %) · MT2 · Final (cumulative? weighting)]\n- **Question format:** [MC / short answer / long answer; anything the prof said about style]\n- **Textbook vs lectures:** [what the prof said about which matters more]\n\n## Exam scope at a glance\n### Definitely testable (🎯 / ⭐)\n- [topic]: [Lecture N]\n### Said NOT tested 🚫\n- [topic]: [Lecture N]\n### Traps he keeps warning about\n- …\n\n## Lecture index\n| # | Date | Deck | What actually happened |\n|---|------|------|------------------------|\n| 1 | | | |\n\n<!-- Paste each lecture section from the builder below, in order. -->\n\n## Glossary (as this course defines terms)\n- **term:** definition\n","1-context-builder-prompt.md":"# Lecture Context Builder (prompt)\n\n> **How to use:** start a NEW chat, *not* inside your course project. Attach the transcript(s) and slides for **2–4 lectures** (more than that and quality drops). Fill in the brackets below, paste this whole prompt, and send. Copy the output into your course's context doc, then upload the updated doc to the project.\n> If you've already built earlier lectures, also paste the current **\"Exam scope at a glance\"** section so the new one stays consistent.\n\n---\n\n**Course:** [e.g. PSYC 101, Section 002, Dr. Name]\n**Lectures in this batch:** [e.g. Lecture 15 (Nov 5), 16 (Nov 12), 17 (Nov 17)]\n**Exam info I know:** [e.g. Midterm 2 covers Ch 4–5; final is cumulative, ~80% post-MT2; MC + short answer]\n**Attached:** [transcripts: yes/no] · [slides: PPTX / PDF / annotated PDF]\n\nYou are building the **lecture context doc** for this course. A Claude tutor will later use it to answer: *what happened in class, what was said that isn't on the slides, and what's likely tested.* Accuracy beats coverage. A tutor that confidently invents a class moment is worse than one that says \"not in my notes.\"\n\n## How to work\n\n1. **Match the transcript to the slides.** Work out which slides each part of the class covered, which slides were skipped, and where the lecture stopped. Professors often run behind, so the slide deck title ≠ what happened.\n2. **Find the gaps between them.** Look for:\n   - things said out loud that aren't on any slide (examples, stories, extra explanations, corrections, \"actually the slide is wrong\")\n   - blanks or click-to-reveal content in the slides that the transcript fills in\n   - slides the prof rushed or skipped\n3. **Collect exam signals,** and only what's actually said or done. Use the prof's own words where they matter (keep each quote under ~15 words). Grade each one:\n   - **🎯 Explicit:** \"this will be on the exam\", \"know this\", \"fair game\", \"I'd ask this\"\n   - **⭐ Strong:** said twice or more, a long time spent on it, a clicker/practice question, \"make sure you understand\", \"students always get this wrong\"\n   - **🔹 Implied:** a learning objective on a slide, or a worked example. (Slide-only cues go here, never higher.)\n4. **Collect scope limits:** \"not testable\", \"don't memorize\", \"beyond this course\", \"you'll see this in 2nd year\", \"just for interest\". Mark these **🚫 Not tested** only if he says so; anything inferred goes under 🔹 with \"(inferred)\".\n5. **Fix caption errors** using the slides (auto-captions mangle names and terms). If you're unsure what was said, write it with **(?)** instead of guessing.\n6. **Privacy:** don't name students or the prof's family members. Write \"a student asked…\" or \"his daughter's example…\".\n\n## Output format (follow exactly; the tutor depends on these headings and emojis)\n\nFor **each** lecture:\n\n```\n## Lecture [N] ([Day Mon DD]): [What it was actually about]\n**Slide deck:** [file/deck title] · **Slides covered:** [e.g. 1–34; 35–48 pushed to next class] · **Recording:** [timestamps refer to this lecture's transcript]\n\n**In one line:** [the core idea of this class]\n\n### What happened\n- [mm:ss] Opened with … (ordered, 5–12 bullets; activities, demos, clickers, topics in sequence)\n\n### Said in class, not on the slides 🗣️\n- [mm:ss] [content]. *Why it matters:* [one line, if it's not obvious]\n\n### Exam signals\n- 🎯 [mm:ss] [topic]: \"[short quote]\"\n- ⭐ [mm:ss] [topic]: [what made it strong, e.g. \"came back to it three times; clicker Q\"]\n- 🔹 [topic]: [learning objective / worked example]\n\n### Not tested / beyond scope 🚫\n- [mm:ss] [topic]: \"[short quote]\"   (or \"None stated.\")\n\n### Clicker & in-class questions\n- **Q:** [question] → **[answer]** ([% correct if said]). *Reasoning he used:* [1–2 lines]\n\n### Slide gaps filled\n- Slide [n]: blank \"_____\" = **[filled term]** (from [mm:ss]), or \"revealed on click: …\"\n\n### Examples, stories & memory hooks\n- [the example/story in 1–2 lines, and what concept it illustrates]\n\n### Corrections, traps & clarifications\n- [anything he corrected, a common mistake he warned about, or a student Q that clarified something]\n\n### Logistics\n- [deadlines, exam scope announcements, office hours changes]. Omit if none.\n```\n\nSkip a sub-section only if it's genuinely empty (write \"None stated.\" for 🚫 and Exam signals; never drop those two).\n\nAfter all lectures, add:\n\n```\n## Scope update for this batch\n### Add to \"Exam scope at a glance\"\n- 🎯/⭐ items worth listing course-wide\n### Add to \"Not tested\" list\n- 🚫 items\n### New traps\n- …\n### New glossary terms (term: one-line definition as the course defines it)\n- …\n```\n\n## Rules\n- Length: about 800–2,000 words per lecture. Dense bullets, no filler, no intro or outro.\n- Everything in **\"Said in class\"** must actually be in the transcript. If you only have slides, write \"Slides only, no transcript\" under that heading and leave it empty.\n- Never upgrade a signal. A slide learning objective is 🔹, even if it feels important.\n- Timestamps in [mm:ss] or [h:mm:ss], taken from the transcript, so the student can jump to the recording.\n- Use the course's terms and definitions exactly as the prof does. Note it if they differ from the textbook.\n","2-project-instructions.md":"# [COURSE CODE] Tutor: Project Instructions\n\n> **How to use:** create a Claude Project for the course. Fill in the brackets, then paste everything below the line into the project's **Instructions**. Upload to **Project knowledge**: the lecture context doc, the slides (PDF/PPTX), and the learning objectives if you have them. Don't upload raw transcripts; the context doc replaces them.\n\n---\n\nYou are my tutor for **[COURSE CODE: course name]**, taught by **[Prof name]** ([term]). Your job is to help me understand the material **as this course teaches it** and to prepare for **this course's exams**, not a generic version of the subject.\n\n## Course facts\n- **Exams:** [e.g. MT1 Oct 13 (Ch 1–3) · MT2 Nov 3 (Ch 4–5) · Final in Dec, cumulative, ~80% post-MT2]\n- **Format:** [e.g. multiple choice + 1–2 word short answer]\n- **What the prof rewards:** [e.g. memorization of terms + applying them to stories/scenarios; learning objectives]\n- **Where we are now:** [e.g. finished Lecture 17; next exam = final]\n\n## Your sources, in order of authority\n1. **Lecture context doc** (project knowledge): what actually happened in each class, what was said beyond the slides, and the prof's exam signals. Key: 🎯 explicit exam signal · ⭐ strong · 🔹 implied · 🗣️ said in class only · 🚫 said not tested.\n2. **Slides:** the official content and wording.\n3. **Textbook / learning objectives** if uploaded.\n4. **Your general knowledge:** only to explain or give extra examples, and say when you're using it (\"outside the course material: …\").\n\nWhen the course and the textbook or the wider field disagree, **teach the course's version for the exam** and mention the difference in one line.\n\n## How to answer\n- **Lead with the answer**, then the explanation. Short bullets and headers, no dense paragraphs.\n- **Tag the scope** at the end of any content answer, in one line:\n  `Scope: 🎯 flagged for exam (L6, 23:10) · on slides L6 #14 · 🗣️ extra example from class`\n  or `Scope: 🚫 he said not tested (L8, 41:02)` or `Scope: ❓ not covered in class. Background only`.\n- **Cite the lecture** (number, date and timestamp when the context doc has one) so I can rewatch that part.\n- **Never invent class events.** If the context doc doesn't cover something, say \"my notes for that lecture don't mention it\" and answer from the slides or general knowledge, labelled.\n- For questions beyond scope: answer briefly (2–3 lines), then say it's not tested, so I don't over-study it.\n- Use the prof's terminology and examples first, then a new example if it helps.\n- Be blunt about what matters. If I'm studying something low-priority, say so.\n\n## Modes (I'll say which, or you infer it)\n- **\"What happened in Lecture N / on [date]?\"** Summarize from the context doc: core idea, what was said beyond the slides, exam signals, not-tested items. Mention anything that carried over from or into the next lecture.\n- **\"I missed class\"** Catch-up version: the 5 things I'd have learned, filled slide blanks, any logistics, then a 3-question check.\n- **\"Quiz me\" / \"practice questions\"** Match the real exam format ([format]). One question at a time; wait for my answer; then explain why each option is right or wrong. Weight 🎯/⭐ topics, mix in traps the prof warned about, and include scenario/application questions, not only definitions. Track what I miss and come back to it.\n- **\"Explain X\"** Three levels if I'm stuck: a plain analogy → the course's version → how the exam would ask it. Then one check question.\n- **\"What's on the exam?\" / \"make a checklist\"** Build it from the 🎯/⭐ items and the learning objectives for the relevant lectures, ordered by priority, with 🚫 items listed separately as \"skip\".\n- **\"Make a study guide\"** Follow the Study Guide prompt if it's in project knowledge. Otherwise build an interactive HTML artifact for that unit (diagrams, step-through examples, MC with explanations).\n- **\"Make Anki cards\"** [keep if you use Anki for this course; delete otherwise] Front/back tab-separated, one fact per card, course wording, tagged by lecture.\n\n## About me\n- [e.g. First-year BSc. I prefer short bullets, direct explanations and blunt feedback.]\n- [e.g. I learn best from concrete examples and connections to other courses (BIOL, CHEM).]\n- [anything else: Canadian spelling, weak spots, how I study]\n","3-study-guide-prompt.md":"# Interactive Study Guide (prompt)\n\n> **How to use:** inside your course project, start a **new chat for each unit** (one chapter or 2–4 lectures). Attach or name the slides for that unit, fill in the brackets, and send. One unit per chat keeps each guide detailed and the chat small. If the guide is cut off, say \"continue\" and it will add the rest.\n> Slides-only courses (no transcripts) work too: the guide just won't have \"said in class\" boxes.\n\n---\n\nMake an **interactive study guide** for **[COURSE CODE]: [unit / chapter / Lectures N–M]** as a single self-contained HTML artifact.\n\n**Sources:** the slides for this unit, plus the lecture context doc in project knowledge if there is one (use its 🎯/⭐/🗣️/🚫 flags). Use the course's wording and definitions. Don't add topics the course didn't cover, except in clearly labelled \"Beyond the course\" notes.\n\n## Layout\n- **Slide-reader layout:** table of contents on the left (grouped by lecture/topic, with a dot on exam-flagged sections). One section at a time on the right. Previous/next buttons and ←/→ keys. A progress bar. Collapses to one column on phones.\n- Follow the order of the slides, but merge slides that make one idea and split ones that cram several.\n- Light and dark mode (respect the system setting, plus a toggle).\n- Plain readable fonts, generous spacing, no walls of text: short paragraphs, bullets, tables.\n\n## Every section includes\n1. **The idea in plain language** (2–5 sentences), then the course's precise version and key terms in bold.\n2. **A diagram** whenever the idea has structure, a process, a comparison, or numbers. Draw it yourself with inline SVG or canvas: labelled, colour-coded, readable in both themes. No external images.\n3. **Flag boxes** where they apply:\n   - 🎯 **Exam**: what to know and how it's likely asked (cite the lecture/timestamp from the context doc)\n   - 🗣️ **Said in class**: content from lecture that isn't on the slides\n   - ⚠️ **Trap**: the common mistake and how to avoid it\n   - 🔗 **Built on later**: where this comes back\n   - 💡 **Analogy / memory hook**: use the prof's examples and stories first\n   - 🚫 **Not tested**: covered for context only\n4. **An interactive bit wherever it teaches something a static page can't.** Examples:\n   - sliders that change a graph or model (e.g. a threshold, a dose-response, a signal-detection criterion, an energy level)\n   - step-through animations of a process (a pathway, a neuron firing, a reaction mechanism, an experiment design)\n   - \"predict, then reveal\" toggles and drag-to-order sequences\n   - small simulators or calculators with worked numbers\n   - classify-the-example drills (e.g. \"which research design is this?\")\n   Skip it where a diagram already does the job; don't add gimmicks.\n5. **Check yourself:** 1–3 multiple-choice questions in the exam's style.\n   - Before answering, I pick a confidence level (Sure / 50-50 / Guessing).\n   - After answering, every option shows why it's right or wrong.\n   - The score is tracked in the sidebar, including how many correct answers were guesses.\n\n## End of the guide\n- **Worked examples / application questions**, with each step revealed by a button.\n- **Mixed quiz** (10–15 questions across the unit, shuffled, with explanations and the score).\n- **One-page cheat sheet:** key terms, the diagrams in mini form, 🎯 items, and 🚫 items to skip. Printable.\n\n## Technical\n- One HTML file. Vanilla JS, no frameworks; Google Fonts are fine. Wrap any `localStorage` use in try/catch.\n- Build it in parts if it's long (shell and navigation first, then the sections), and make sure the finished file runs without console errors.\n- Accessible: real buttons, visible focus, colour isn't the only signal, and text alternatives for diagrams.\n"}</script>
+<script type="application/json" id="tpl">{"0-context-doc-skeleton.md":"# [COURSE CODE] Lecture Context: [Prof name], [Term]\n\n> Built from lecture transcripts + slides with the Lecture Context Builder prompt. Timestamps refer to each lecture's recording.\n> **Key:** 🎯 explicit exam signal · ⭐ strong signal · 🔹 implied · 🗣️ said in class, not on slides · 🚫 said not tested\n\n## Course & exam facts\n- **Assessments:** [e.g. MT1 (date, chapters, %) · MT2 · Final (cumulative? weighting)]\n- **Question format:** [MC / short answer / long answer; anything the prof said about style]\n- **Textbook vs lectures:** [what the prof said about which matters more]\n\n## Exam scope at a glance\n### Definitely testable (🎯 / ⭐)\n- [topic]: [Lecture N]\n### Said NOT tested 🚫\n- [topic]: [Lecture N]\n### Traps he keeps warning about\n- …\n\n## Lecture index\n| # | Date | Deck | What actually happened |\n|---|------|------|------------------------|\n| 1 | | | |\n\n<!-- Paste each lecture section from the builder below, in order. -->\n\n## Glossary (as this course defines terms)\n- **term:** definition\n","1-context-builder-prompt.md":"# Lecture Context Builder (prompt)\n\n> **How to use:** start a NEW chat, *not* inside your course project. Attach the transcript(s) and slides for **2–4 lectures** (more than that and quality drops). Fill in the brackets below, paste this whole prompt, and send. Copy the output into your course's context doc, then upload the updated doc to the project.\n> If you've already built earlier lectures, also paste the current **\"Exam scope at a glance\"** section so the new one stays consistent.\n\n---\n\n**Course:** [e.g. PSYC 101, Section 002, Dr. Name]\n**Lectures in this batch:** [e.g. Lecture 15 (Nov 5), 16 (Nov 12), 17 (Nov 17)]\n**Exam info I know:** [e.g. Midterm 2 covers Ch 4–5; final is cumulative, ~80% post-MT2; MC + short answer]\n**Attached:** [transcripts: yes/no] · [slides: PPTX / PDF / annotated PDF]\n\nYou are building the **lecture context doc** for this course. A Claude tutor will later use it to answer: *what happened in class, what was said that isn't on the slides, and what's likely tested.* Accuracy beats coverage. A tutor that confidently invents a class moment is worse than one that says \"not in my notes.\"\n\n## How to work\n\n1. **Match the transcript to the slides.** Work out which slides each part of the class covered, which slides were skipped, and where the lecture stopped. Professors often run behind, so the slide deck title ≠ what happened.\n2. **Find the gaps between them.** Look for:\n   - things said out loud that aren't on any slide (examples, stories, extra explanations, corrections, \"actually the slide is wrong\")\n   - blanks or click-to-reveal content in the slides that the transcript fills in\n   - slides the prof rushed or skipped\n3. **Collect exam signals,** and only what's actually said or done. Use the prof's own words where they matter (keep each quote under ~15 words). Grade each one:\n   - **🎯 Explicit:** \"this will be on the exam\", \"know this\", \"fair game\", \"I'd ask this\"\n   - **⭐ Strong:** said twice or more, a long time spent on it, a clicker/practice question, \"make sure you understand\", \"students always get this wrong\"\n   - **🔹 Implied:** a learning objective on a slide, or a worked example. (Slide-only cues go here, never higher.)\n4. **Collect scope limits:** \"not testable\", \"don't memorize\", \"beyond this course\", \"you'll see this in 2nd year\", \"just for interest\". Mark these **🚫 Not tested** only if he says so; anything inferred goes under 🔹 with \"(inferred)\".\n5. **Fix caption errors** using the slides (auto-captions mangle names and terms). If you're unsure what was said, write it with **(?)** instead of guessing.\n6. **Privacy:** don't name students or the prof's family members. Write \"a student asked…\" or \"his daughter's example…\".\n\n## Output format (follow exactly; the tutor depends on these headings and emojis)\n\nFor **each** lecture:\n\n```\n## Lecture [N] ([Day Mon DD]): [What it was actually about]\n**Slide deck:** [file/deck title] · **Slides covered:** [e.g. 1–34; 35–48 pushed to next class] · **Recording:** [timestamps refer to this lecture's transcript]\n\n**In one line:** [the core idea of this class]\n\n### What happened\n- [mm:ss] Opened with … (ordered, 5–12 bullets; activities, demos, clickers, topics in sequence)\n\n### Said in class, not on the slides 🗣️\n- [mm:ss] [content]. *Why it matters:* [one line, if it's not obvious]\n\n### Exam signals\n- 🎯 [mm:ss] [topic]: \"[short quote]\"\n- ⭐ [mm:ss] [topic]: [what made it strong, e.g. \"came back to it three times; clicker Q\"]\n- 🔹 [topic]: [learning objective / worked example]\n\n### Not tested / beyond scope 🚫\n- [mm:ss] [topic]: \"[short quote]\"   (or \"None stated.\")\n\n### Clicker & in-class questions\n- **Q:** [question] → **[answer]** ([% correct if said]). *Reasoning he used:* [1–2 lines]\n\n### Slide gaps filled\n- Slide [n]: blank \"_____\" = **[filled term]** (from [mm:ss]), or \"revealed on click: …\"\n\n### Examples, stories & memory hooks\n- [the example/story in 1–2 lines, and what concept it illustrates]\n\n### Corrections, traps & clarifications\n- [anything he corrected, a common mistake he warned about, or a student Q that clarified something]\n\n### Logistics\n- [deadlines, exam scope announcements, office hours changes]. Omit if none.\n```\n\nSkip a sub-section only if it's genuinely empty (write \"None stated.\" for 🚫 and Exam signals; never drop those two).\n\nAfter all lectures, add:\n\n```\n## Scope update for this batch\n### Add to \"Exam scope at a glance\"\n- 🎯/⭐ items worth listing course-wide\n### Add to \"Not tested\" list\n- 🚫 items\n### New traps\n- …\n### New glossary terms (term: one-line definition as the course defines it)\n- …\n```\n\n## Rules\n- Length: about 800–2,000 words per lecture. Dense bullets, no filler, no intro or outro.\n- Everything in **\"Said in class\"** must actually be in the transcript. If you only have slides, write \"Slides only, no transcript\" under that heading and leave it empty.\n- Never upgrade a signal. A slide learning objective is 🔹, even if it feels important.\n- Timestamps in [mm:ss] or [h:mm:ss], taken from the transcript, so the student can jump to the recording.\n- Use the course's terms and definitions exactly as the prof does. Note it if they differ from the textbook.\n","2-project-instructions.md":"# [COURSE CODE] Tutor: Project Instructions\n\n> **How to use:** create a Claude Project for the course. Fill in the brackets, then paste everything below the line into the project's **Instructions**. Upload to **Project knowledge**: the lecture context doc, the slides (PDF/PPTX), and the learning objectives if you have them. Don't upload raw transcripts; the context doc replaces them.\n\n---\n\nYou are my tutor for **[COURSE CODE: course name]**, taught by **[Prof name]** ([term]). Your job is to help me understand the material **as this course teaches it** and to prepare for **this course's exams**, not a generic version of the subject.\n\n## Course facts\n- **Exams:** [e.g. MT1 Oct 13 (Ch 1–3) · MT2 Nov 3 (Ch 4–5) · Final in Dec, cumulative, ~80% post-MT2]\n- **Format:** [e.g. multiple choice + 1–2 word short answer]\n- **What the prof rewards:** [e.g. memorization of terms + applying them to stories/scenarios; learning objectives]\n- **Where we are now:** [e.g. finished Lecture 17; next exam = final]\n\n## Your sources, in order of authority\n1. **Lecture context doc** (project knowledge): what actually happened in each class, what was said beyond the slides, and the prof's exam signals. Key: 🎯 explicit exam signal · ⭐ strong · 🔹 implied · 🗣️ said in class only · 🚫 said not tested.\n2. **Slides:** the official content and wording.\n3. **Textbook / learning objectives** if uploaded.\n4. **Your general knowledge:** only to explain or give extra examples, and say when you're using it (\"outside the course material: …\").\n\nWhen the course and the textbook or the wider field disagree, **teach the course's version for the exam** and mention the difference in one line.\n\n## How to answer\n- **Lead with the answer**, then the explanation. Short bullets and headers, no dense paragraphs.\n- **Tag the scope** at the end of any content answer, in one line:\n  `Scope: 🎯 flagged for exam (L6, 23:10) · on slides L6 #14 · 🗣️ extra example from class`\n  or `Scope: 🚫 he said not tested (L8, 41:02)` or `Scope: ❓ not covered in class. Background only`.\n- **Cite the lecture** (number, date and timestamp when the context doc has one) so I can rewatch that part.\n- **Never invent class events.** If the context doc doesn't cover something, say \"my notes for that lecture don't mention it\" and answer from the slides or general knowledge, labelled.\n- For questions beyond scope: answer briefly (2–3 lines), then say it's not tested, so I don't over-study it.\n- Use the prof's terminology and examples first, then a new example if it helps.\n- Be blunt about what matters. If I'm studying something low-priority, say so.\n\n## Modes (I'll say which, or you infer it)\n- **\"What happened in Lecture N / on [date]?\"** Summarize from the context doc: core idea, what was said beyond the slides, exam signals, not-tested items. Mention anything that carried over from or into the next lecture.\n- **\"I missed class\"** Catch-up version: the 5 things I'd have learned, filled slide blanks, any logistics, then a 3-question check.\n- **\"Quiz me\" / \"practice questions\"** Match the real exam format ([format]). One question at a time; wait for my answer; then explain why each option is right or wrong. Weight 🎯/⭐ topics, mix in traps the prof warned about, and include scenario/application questions, not only definitions. Track what I miss and come back to it.\n- **\"Explain X\"** Three levels if I'm stuck: a plain analogy → the course's version → how the exam would ask it. Then one check question.\n- **\"What's on the exam?\" / \"make a checklist\"** Build it from the 🎯/⭐ items and the learning objectives for the relevant lectures, ordered by priority, with 🚫 items listed separately as \"skip\".\n- **\"Make a study guide\"** Follow the Study Guide prompt if it's in project knowledge. Otherwise build an interactive HTML artifact for that unit (diagrams, step-through examples, MC with explanations).\n- **\"Make Anki cards\"** [keep if you use Anki for this course; delete otherwise] Front/back tab-separated, one fact per card, course wording, tagged by lecture.\n\n## About me\n- [e.g. First-year BSc. I prefer short bullets, direct explanations and blunt feedback.]\n- [e.g. I learn best from concrete examples and connections to other courses (BIOL, CHEM).]\n- [anything else: Canadian spelling, weak spots, how I study]\n","3-study-guide-prompt.md":"# Interactive Study Guide (prompt)\n\n> **How to use:** inside your course project, start a **new chat for each unit** (one chapter or 2–4 lectures). Attach or name the slides for that unit, fill in the brackets, and send. One unit per chat keeps each guide detailed and the chat small. If the guide is cut off, say \"continue\" and it will add the rest.\n> Slides-only courses (no transcripts) work too: the guide just won't have \"said in class\" boxes.\n\n---\n\nMake an **interactive study guide** for **[COURSE CODE]: [unit / chapter / Lectures N–M]** as a single self-contained HTML artifact.\n\n**Sources:** the slides for this unit, plus the lecture context doc in project knowledge if there is one (use its 🎯/⭐/🗣️/🚫 flags). Use the course's wording and definitions. Don't add topics the course didn't cover, except in clearly labelled \"Beyond the course\" notes.\n\n## Layout\n- **Slide-reader layout:** table of contents on the left (grouped by lecture/topic, with a dot on exam-flagged sections). One section at a time on the right. Previous/next buttons and ←/→ keys. A progress bar. Collapses to one column on phones.\n- Follow the order of the slides, but merge slides that make one idea and split ones that cram several.\n- Light and dark mode (respect the system setting, plus a toggle).\n- Plain readable fonts, generous spacing, no walls of text: short paragraphs, bullets, tables.\n\n## Every section includes\n1. **The idea in plain language** (2–5 sentences), then the course's precise version and key terms in bold.\n2. **A diagram** whenever the idea has structure, a process, a comparison, or numbers. Draw it yourself with inline SVG or canvas: labelled, colour-coded, readable in both themes. No external images.\n3. **Flag boxes** where they apply:\n   - 🎯 **Exam**: what to know and how it's likely asked (cite the lecture/timestamp from the context doc)\n   - 🗣️ **Said in class**: content from lecture that isn't on the slides\n   - ⚠️ **Trap**: the common mistake and how to avoid it\n   - 🔗 **Built on later**: where this comes back\n   - 💡 **Analogy / memory hook**: use the prof's examples and stories first\n   - 🚫 **Not tested**: covered for context only\n4. **An interactive bit wherever it teaches something a static page can't.** Examples:\n   - sliders that change a graph or model (e.g. a threshold, a dose-response, a signal-detection criterion, an energy level)\n   - step-through animations of a process (a pathway, a neuron firing, a reaction mechanism, an experiment design)\n   - \"predict, then reveal\" toggles and drag-to-order sequences\n   - small simulators or calculators with worked numbers\n   - classify-the-example drills (e.g. \"which research design is this?\")\n   Skip it where a diagram already does the job; don't add gimmicks.\n5. **Check yourself:** 1–3 multiple-choice questions in the exam's style.\n   - Before answering, I pick a confidence level (Sure / 50-50 / Guessing).\n   - After answering, every option shows why it's right or wrong.\n   - The score is tracked in the sidebar, including how many correct answers were guesses.\n\n## End of the guide\n- **Worked examples / application questions**, with each step revealed by a button.\n- **Mixed quiz** (10–15 questions across the unit, shuffled, with explanations and the score).\n- **One-page cheat sheet:** key terms, the diagrams in mini form, 🎯 items, and 🚫 items to skip. Printable.\n\n## Technical\n- One HTML file. Vanilla JS, no frameworks; Google Fonts are fine. Wrap any `localStorage` use in try/catch.\n- Build it in parts if it's long (shell and navigation first, then the sections), and make sure the finished file runs without console errors.\n- Accessible: real buttons, visible focus, colour isn't the only signal, and text alternatives for diagrams.\n","4-anki-deck-prompt.md":"# Anki Deck (prompt)\n\n> **How to use:** inside your course project, start a **new chat for each unit** (2–4 lectures). Fill in the brackets, paste everything below the line, and send. Say \"continue\" if it stops. Import the file it gives you into Anki (File → Import).\n> Want cards tuned to your subject, exam and study style? Use the personalized prompt on the Anki tab (Plan + personalize) instead.\n\n---\n\nMake an **Anki deck** for **[COURSE CODE]: [Lectures N–M / unit]**.\n\n**Sources:** the lecture context doc in project knowledge (use its 🎯/⭐/🗣️/🚫 flags), the slides for these lectures, and the exam blueprint if I've uploaded one. Use the course's wording, definitions and examples. Skip anything marked 🚫 not tested.\n\n**Goal:** a deck that is enough on its own to do well on this course's exam. Every 🎯 and ⭐ item must have at least one card. Cover 🔹 items and slide content in proportion to how likely they are to be tested. Don't add outside material.\n\n## Card rules\n1. **One fact per card.** Short prompts, short answers. Split anything you'd need more than ~10 seconds to answer.\n2. **Mostly cloze**, one deletion per card (`{{c1::...}}`). For lists of up to 4 items, use one card per item (c1, c2, c3) on the same note. Break longer lists into smaller groups.\n3. **Basic Q&A** for \"why/how\" questions, comparisons and application questions.\n4. **Test understanding, not just recall.** For each key concept, add at least one card that asks the student to apply it (a short scenario, an example to classify, or \"what happens if…\").\n5. **Unambiguous fronts.** Give enough context that only one answer fits. Never \"What is it called?\" without saying what \"it\" is.\n6. **Back Extra / Back field:** one line of why it matters or a memory hook, then the source, e.g. `L6 · slide 14 · 23:10`.\n7. **Tags** on every note: lecture (`L06`), topic (`topic::glycolysis`), and `highyield` for 🎯/⭐ items.\n\n## Diagrams\n- **Drawn by you:** when a card is about a structure, process, cycle, graph or comparison, draw a small labelled inline SVG in the field. Single line, single quotes on attributes, `viewBox` set, no external fonts, readable on white and dark backgrounds (use mid-tone colours).\n- **From the slides:** when the slide's own figure is what the exam uses (anatomy, pathways, structures, graphs, maps), use a snapshot of that slide.\n  - If you can run code: render the slide page to PNG, crop it to the figure, name it `L06-s14.png`, and reference it with `<img src='L06-s14.png'>`. Use it for **image occlusion style cards** (hide one label per card by covering it with a box in the image, and put the answer on the back).\n  - If you can't: put `[SLIDE IMAGE: L6 slide 14, figure name]` in the field so I can add it myself.\n\n## Output\n**If you can run code**, build a ready-to-import **`.apkg`** with all images bundled (use `genanki` if it's installed; otherwise build it with Python's `sqlite3` + `zipfile`). Deck name: `[COURSE CODE]::[unit]`. Use Anki's standard **Basic** and **Cloze** note types.\n\n**Always also give me a `.txt` import file** in this exact format (tab-separated, one note per line, no line breaks inside fields; use `<br>` for new lines):\n\n```\n#separator:tab\n#html:true\n#deck:[COURSE CODE]::[unit]\n#notetype column:1\n#tags column:4\nCloze\tThe {{c1::mitochondria}} makes most of the cell's ATP.\tMemory hook here. L3 · slide 8\tL03 topic::cells highyield\nBasic\tWhy does X happen?\tBecause Y. L4 · slide 2\tL04 topic::x\n```\n\nColumn 2 is the Cloze **Text** / Basic **Front**. Column 3 is **Back Extra** / **Back**.\n\n## After the deck\nList: number of cards, how many are `highyield`, any 🎯 items you couldn't turn into good cards, and any `[SLIDE IMAGE]` placeholders I need to fill.\n","5-exam-analysis-prompt.md":"# Past Paper Analysis (prompt)\n\n> **How to use:** inside your course project, start a new chat. Attach every past exam, quiz, practice midterm, assignment and review sheet you have (answer keys too, if you have them). Fill in the brackets, paste everything below the line, and send. Save the result as **Exam blueprint** in the project files. The practice-exam prompt and the Anki prompts use it.\n\n---\n\n**Course:** [COURSE CODE, Prof name, term]\n**Upcoming exam:** [e.g. Midterm 2, Nov 26, Lectures 9–17, 50 min]\n**Format I've been told:** [e.g. 30 MC + 2 short answer / \"same as MT1\" / unknown]\n**What I've attached:** [e.g. MT1 from this term (real), 2023 final (same prof), practice MT2 from the course site, weekly quizzes 1–6]\n\nAnalyze these materials to work out **what this exam will test and how**. Use the lecture context doc in project knowledge as the map of what this course actually covered and flagged (🎯/⭐/🔹/🚫).\n\n## 1. Rate every source first\nNot all practice material is like the real exam. Some courses hand out practice that's from another prof, another term, a textbook, or a different format. For each attached file, give:\n\n| Source | Type | Tier | Format match | Scope match | Difficulty vs real exam | Use it? |\n|---|---|---|---|---|---|---|\n\n- **Tier A:** real past exams/quizzes from this course and prof. **Tier B:** practice made for this course this term. **Tier C:** other terms, other profs, textbook or generic questions.\n- **Format match / scope match:** compare question types, length and wording to Tier A, and topics to the context doc. Say how close it is in a few words.\n- If a source covers topics this course didn't teach, or uses a different format, say so clearly and **down-weight it**. Don't let it drive the predictions.\n- If there's no Tier A material, say the predictions are lower confidence.\n\n## 2. Map every question to a topic\nGo through each question in the usable sources. Tag it with the topic and lecture from the context doc, the question type (definition, application/scenario, calculation, diagram, compare, experiment design, essay…), and the marks if shown. Group near-duplicates: the prof re-asking the same idea in new words is a strong signal.\n\n## 3. Key exam topics\nA ranked table, weighting Tier A most, then B, then C:\n\n| Rank | Topic | Lectures | Times tested (by tier) | Usual question type | Share of marks | Context doc signal | Confidence |\n|---|---|---|---|---|---|---|---|\n\nThen:\n- **Top 10 to master**, each with one line on *how* it gets asked.\n- **Repeat offenders:** ideas that show up on almost every paper.\n- **Taught but never tested yet:** 🎯/⭐ topics from the context doc that the papers don't cover. Say whether they're likely to appear now (e.g. new this term, or flagged in class).\n- **Probably skip:** topics only in Tier C material, or marked 🚫.\n\n## 4. How this prof writes questions\n- Common wording and traps (e.g. \"all of the following EXCEPT\", two true-sounding options, units).\n- What full marks look like on written answers (from answer keys if attached).\n- Difficulty mix and how much is recall vs application.\n\n## 5. Exam blueprint\nA short prediction of the upcoming exam: sections, number and type of questions, marks, time, and the topic mix (%), based on the most representative sources. Mark each part **known** (stated by the prof or syllabus) or **inferred**.\n\nKeep it skimmable: tables and bullets, no filler. Cite sources as `MT1-2024 Q7` and lectures as `L6`.\n","6-practice-exam-prompt.md":"# Practice Exam (prompt)\n\n> **How to use:** inside your course project, after you've saved the **Exam blueprint** (from the past paper analysis) to the project files. Start a new chat, fill in the brackets, paste everything below the line, and send. Do the exam timed, on paper or in the artifact, then send your answers to get it marked.\n\n---\n\nMake a **practice [Midterm 2 / Final / Quiz 4]** for **[COURSE CODE]** covering **[Lectures N–M]**.\n\n**Use:** the Exam blueprint and the lecture context doc in project knowledge, plus any past exams I've attached.\n\n## Match the real exam exactly\n- Copy the **format of the most representative real exam** (Tier A in the blueprint; Tier B if there's no Tier A): the same sections in the same order, the same number and types of questions, the same point values, time limit, instructions, and answer format (bubble, short answer lines, show-your-work boxes).\n- Match the prof's **wording style, difficulty and recall/application mix**. If the real exams use scenarios, tables, graphs or diagrams, so does this one (draw them as inline SVG).\n- **Do not copy past questions.** Write new questions that test the same ideas in the same way. Change the scenario, the numbers, or the angle.\n- If the only practice material doesn't look like the real exam (the blueprint will say), follow the blueprint's format, not the practice material's.\n\n## Content\n- Split topics in the same proportions as the blueprint's predicted topic mix. Weight 🎯/⭐ items and the \"Top 10\" most.\n- Include the prof's usual traps and at least one question on a \"taught but never tested yet\" topic.\n- Only use content from the covered lectures. Nothing marked 🚫.\n- For multiple choice: plausible distractors drawn from real misconceptions, one clearly best answer, answers spread evenly across A–D.\n\n## Output\n1. **The exam** as a clean, printable HTML artifact (looks like a real exam paper: header, instructions, time, marks per question). Add an optional **\"Take it here\"** mode with a countdown timer and answer boxes.\n2. **Answer key in a separate artifact**, so I don't see it while I write. For each question: the answer, why each wrong option is wrong, the marking scheme for written answers (what earns each mark), the topic and lecture, and the source it's modelled on (e.g. `like MT1-2024 Q7`).\n\n## When I send my answers\nMark them strictly, like the prof would. Then give me:\n- my score, overall and by topic\n- each mistake: what I wrote, the correct idea, and *why* I got it wrong (didn't know it, misread the question, mixed up two terms, calculation slip)\n- the 3 topics to study next, ranked\n- Anki cards for every mistake, in the same `.txt` import format as the Anki deck prompt, tagged `mistake`\n"}</script>
 <script>
 // ---------- Tabs (with #hash so links can open a tab) ----------
-const tabs=[...document.querySelectorAll('[role=tab]')];
 const panelFor=t=>document.getElementById(t.getAttribute('aria-controls'));
-function select(t,focus){
-  tabs.forEach(x=>{const on=x===t;x.setAttribute('aria-selected',on);x.tabIndex=on?0:-1;panelFor(x).hidden=!on;});
-  if(focus)t.focus();
-  const id=t.id==='t-project'?'#project':'#files'; const cur=location.hash; const inP=cur==='#project'||/^#p\d/.test(cur); if(!cur||inP!==(id==='#project')) history.replaceState(null,'',id);
+function tabGroup(list,onSelect){
+  const sel=(t,focus)=>{list.forEach(x=>{const on=x===t;x.setAttribute('aria-selected',on);x.tabIndex=on?0:-1;panelFor(x).hidden=!on;});if(focus)t.focus();if(onSelect)onSelect(t);};
+  list.forEach((t,i)=>{
+    t.addEventListener('click',()=>{sel(t);window.scrollTo({top:0});});
+    t.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();sel(list[(i+(e.key==='ArrowRight'?1:list.length-1))%list.length],true);}});
+  });
+  return sel;
 }
-tabs.forEach((t,i)=>{
-  t.addEventListener('click',()=>{select(t);window.scrollTo({top:0});});
-  t.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();select(tabs[(i+(e.key==='ArrowRight'?1:tabs.length-1))%tabs.length],true);}});
-});
+const tabs=[...document.querySelectorAll('.tabs [role=tab]')];
+const tabOf=el=>tabs.find(t=>el.closest('#'+t.getAttribute('aria-controls')));
+const select=tabGroup(tabs,t=>{const cur=document.getElementById(location.hash.slice(1));if(!cur||tabOf(cur)!==t)history.replaceState(null,'','#'+t.dataset.hash);});
+const subtabs=[...document.querySelectorAll('.subtab')];
+const selectSub=tabGroup(subtabs);
+document.querySelectorAll('[data-sub]').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();selectSub(document.getElementById(a.dataset.sub));document.getElementById('p-anki').scrollIntoView();window.scrollBy(0,-120);}));
 function fromHash(){
   const h=location.hash.slice(1); if(!h) return;
-  const el=document.getElementById(h);
-  const inProject=h==='project'||(el&&el.closest('#p-project'));
-  select(inProject?tabs[1]:tabs[0]);
-  if(el&&h!=='project'&&h!=='files') setTimeout(()=>el.scrollIntoView(),0);
+  const byHash=tabs.find(t=>t.dataset.hash===h);
+  if(byHash){select(byHash);window.scrollTo({top:0});return;}
+  const el=document.getElementById(h); if(!el) return;
+  const t=tabOf(el); if(t) select(t);
+  const sp=el.closest('#sp-plan,#sp-deck'); if(sp) selectSub(subtabs.find(s=>s.getAttribute('aria-controls')===sp.id));
+  setTimeout(()=>el.scrollIntoView(),0);
 }
 window.addEventListener('hashchange',fromHash); fromHash();
 
@@ -309,15 +518,139 @@ drop.ondrop=e=>{e.preventDefault();drop.classList.remove('over');handle(e.dataTr
 
 // ---------- Templates: copy / download / preview ----------
 const TPL=JSON.parse(document.getElementById('tpl').textContent);
-document.querySelectorAll('.acts[data-t]').forEach(box=>{
-  const name=box.dataset.t, text=TPL[name];
+function acts(box,getText,file,pre){
   const mk=(label,cls,fn)=>{const b=document.createElement('button');b.type='button';b.textContent=label;if(cls)b.className=cls;b.onclick=()=>fn(b);box.appendChild(b);return b;};
-  const pre=document.createElement('pre');pre.className='tp';pre.textContent=text;
-  mk('Copy','',async b=>{try{await navigator.clipboard.writeText(text);}catch(e){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();}b.textContent='Copied ✓';setTimeout(()=>b.textContent='Copy',1600);});
-  mk('Download .md','ghost',()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'text/markdown'}));a.download=name.replace(/^\d-/,'');document.body.appendChild(a);a.click();a.remove();});
+  if(!pre){pre=document.createElement('pre');pre.className='tp';box.after(pre);}
+  pre.textContent=getText();
+  mk('Copy','',async b=>{const text=getText();try{await navigator.clipboard.writeText(text);}catch(e){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();}b.textContent='Copied ✓';setTimeout(()=>b.textContent='Copy',1600);});
+  mk('Download .md','ghost',()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([getText()],{type:'text/markdown'}));a.download=file;document.body.appendChild(a);a.click();a.remove();});
   mk('Preview','ghost',b=>{pre.classList.toggle('show');b.textContent=pre.classList.contains('show')?'Hide preview':'Preview';});
-  box.after(pre);
-});
+  return pre;
+}
+document.querySelectorAll('.acts[data-t]').forEach(box=>{const name=box.dataset.t;acts(box,()=>TPL[name],name.replace(/^\d-/,''));});
+
+// ---------- Anki: planner + personalized prompt + SUPER CRAM ----------
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let cram=false;
+const PER_LEC={key:15,exam:30,all:50};
+const SUBJECT={
+  bio:['Biology / life sciences',['Cloze cards, one fact per deletion, with a one-line "why" in Back Extra (the style of the big MCAT decks like AnKing and MileDown).','Processes and pathways as ordered steps: one card per step ("After X, what happens next?") plus one big-picture diagram card.','Image occlusion for structures, anatomy, cycles and pathways.','Tell-apart cards for look-alikes (e.g. mitosis vs meiosis).']],
+  chem:['Chemistry / biochemistry',['Reaction cards: reactants + conditions → product, and the reverse.','Mechanisms one step at a time, with arrow-pushing diagrams.','Trends with the reason, not just the direction.','Structures and functional groups as image cards; equations with units and when they apply.']],
+  phys:['Physics / engineering',['Formula cards: the equation, each symbol with units, and when it does or doesn\'t apply.','"Which equation or principle fits this situation?" cards.','Short worked problems split one step per card. Full problems belong in practice exams, not Anki.','Free-body, circuit and setup diagrams drawn as SVG.']],
+  math:['Math / statistics',['Definitions and theorems with their exact conditions.','"Which method or test do I use when…" decision cards.','Tiny worked examples (one step per card) and common-mistake cards.','Anki is for the tools; long problems go in practice exams.']],
+  psych:['Psychology / social sciences',['Term → definition AND definition → term, like the Mr. Pankow / AnKing psych-soc MCAT cards.','Scenario cards: a 1–2 sentence example → name the concept. This is how MC exams ask.','Researcher → study → finding cards; theory stages in order.','Tell-apart cards for easily confused terms.']],
+  hist:['History / humanities',['Who / what / when / why it matters, with cause → effect chains.','No date-only cards unless dates are tested.','Key quotes or sources → author, context and significance.','Theme cards that link events, for essay answers.']],
+  lang:['Languages',['Vocab both directions, each with an example sentence (cloze the word).','Grammar patterns as cloze sentences.','Gender and irregular forms on their own cards.']],
+  cs:['Computer science',['Concept and definition cards, including time/space complexity.','"What does this code output?" cards with short snippets in <code>.','Trade-off cards: when to use X vs Y.','Diagrams for data structures and algorithm steps.']],
+  bus:['Business / economics',['Definitions, and formulas/ratios with what they tell you.','Graph cards: "what shifts, and which way, when…" with SVG graphs.','Cause → effect chains for policy and market events.','Short calculation cards, one step at a time.']],
+  med:['Medicine / nursing / health',['AnKing-style cloze with a rich Back Extra (mechanism, why it matters).','Mechanism → presentation → diagnosis → treatment chains.','Image occlusion for anatomy, histology and pathways.','Normal values and drug classes as their own cards.']],
+  other:['Other',['A mix of cloze and Q&A, one fact per card, plus application cards.']]
+};
+const FORMAT={mc:'Multiple choice: tell-apart cards for similar terms and the traps distractors use.',sa:'Short answer: cards that make me produce the full definition plus a key example, the way a marker wants it.',calc:'Calculations: formula cards (when to use, variables, units) and mini worked problems, one step per card.',diag:'Diagrams/labelling: image occlusion cards for every figure likely to be on the exam.',essay:'Essays: for each big theme, cards for the thesis, 3 supporting points with evidence, and a counterargument.'};
+const WEAK={terms:'Memorizing terms: add a memory hook (mnemonic, story or the prof\'s example) to every term card.',process:'Processes: an ordered-steps card for each process, and "what comes before/after X" cards.',apply:'Applying ideas: at least 2 scenario/application cards for every key concept.',visual:'Diagrams/structures: image occlusion and "draw it from memory, then compare" cards.',formulas:'Formulas: a "when do I use this?" card and a units card for every formula.'};
+const STYLE={mix:'Mix: cloze for facts and terms, Q&A for why/how and application.',cloze:'Mostly fill-in-the-blank (cloze). Use Q&A only where cloze doesn\'t work.',basic:'Mostly question → answer (Basic). Use cloze only for lists and definitions.'};
+const DIAG={both:'Use both diagram types as described above.',draw:'Diagrams: only ones you draw as inline SVG. No slide snapshots.',slides:'Diagrams: only slide snapshots (image occlusion style). Don\'t draw your own.',none:'No diagrams. Text-only cards.'};
+
+const radio=n=>(document.querySelector(`input[name=${n}]:checked`)||{}).value;
+const checks=id=>[...document.querySelectorAll(`#${id} input:checked`)].map(i=>i.value);
+const today=()=>{const d=new Date();d.setHours(0,0,0,0);return d;};
+const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+
+function plan(){
+  const lec=Math.max(1,+$('s-lec').value||1), perLec=PER_LEC[radio('detail')], cards=lec*perLec;
+  const per=+$('s-days').value, mins=Math.max(5,+$('s-min').value||30);
+  if(cram) return {cram:true,cards:Math.min(150,Math.max(60,lec*8))};
+  if(!$('s-date').value) return {err:'Pick your exam date.'};
+  const D=Math.round((new Date($('s-date').value+'T00:00')-today())/864e5);
+  if(D<1) return {err:'Pick a date after today.'};
+  if(D<=2) return {err:'Exam in '+D+' day'+(D>1?'s':'')+'? Press SUPER CRAM.',cramHint:true};
+  const studyDays=Math.max(1,Math.round(D*per/7));
+  const reserve=D>=7?Math.max(1,Math.round(studyDays*.2)):0;
+  const newDays=Math.max(1,studyDays-reserve);
+  const need=Math.ceil(cards/newDays), fit=Math.max(1,Math.floor(mins/1.5));
+  return {D,cards,lec,perLec,studyDays,reserve,newDays,need,fit,mins,
+    newPerDay:Math.min(need,fit),short:need>fit,
+    steps:D<=7?'1m 10m 1h':'1m 10m',
+    retention:D>30?'0.90':D>7?'0.92':'0.95',
+    maxIvl:Math.max(2,Math.round(D/3)),
+    reserveDays:Math.ceil(reserve*7/per)};
+}
+function settingsTable(rows){return '<table class="cmp"><tr><th>Setting</th><th>Value</th></tr>'+rows.map(r=>`<tr><td>${r[0]}</td><td><b>${r[1]}</b>${r[2]?'<br><span style="color:var(--muted);font-size:13.5px">'+r[2]+'</span>':''}</td></tr>`).join('')+'</table>';}
+function renderPlan(p){
+  const o=$('plan-out');
+  if(p.err){o.innerHTML=`<div class="call ${p.cramHint?'warn':'tip'}">${p.err}</div>`;return;}
+  const course=esc($('q-course').value.trim()||'your course');
+  if(p.cram){
+    o.innerHTML=`<div class="out cram-box"><h4>🌈 SUPER CRAM plan: exam tomorrow</h4>
+      <ol>
+        <li><b>Now (15 min):</b> paste your SUPER CRAM prompt (step 3) in a new chat in your project. You get ~${p.cards} cards on only the most-tested ideas.</li>
+        <li><b>Import it</b>, but don't study the normal deck. Make a filtered deck (settings below).</li>
+        <li><b>Pass 1 (2–3 h):</b> go through every card. 5-min break every 45 min.</li>
+        <li><b>Pass 2:</b> rebuild the filtered deck with <code>rated:1:1</code> to redo only what you missed today.</li>
+        <li><b>Test yourself:</b> ask Claude for <code>15 exam-style questions on the top topics</code> (tab ③).</li>
+        <li><b>Sleep at least 6 hours.</b> Sleep is when memories stick. An all-nighter scores worse.</li>
+        <li><b>Morning (30 min):</b> rebuild with <code>rated:2:1</code> and do your misses once more.</li>
+      </ol>
+      <h4 style="margin-top:12px">Filtered deck settings</h4>
+      <p style="margin:0 0 4px;font-size:15px"><b>Tools → Create Filtered Deck</b></p>
+      ${settingsTable([['Search',`deck:"${course}" tag:highyield`,'Replace with your deck name. Drop the tag part to include everything.'],['Limit','9999'],['Cards selected by','Order added','Lecture order, so ideas build on each other.'],['Reschedule cards based on my answers','Off','Keeps your normal deck\'s schedule clean for later.'],['Again / Hard / Good delay','60 / 600 / 0 s','Missed cards come back in 1 min, hard ones in 10.']])}</div>`;
+    return;
+  }
+  o.innerHTML=`<div class="out">
+    <h4>Your plan</h4>
+    <ul>
+      <li><b>${p.D} days</b> until the exam, about <b>${p.studyDays} study days</b>. Deck size: about <b>${p.cards} cards</b> (${p.lec} lectures × ${p.perLec}).</li>
+      <li>Learn <b>${p.newPerDay} new cards</b> per study day, plus reviews (about <b>${Math.round(p.newPerDay*1.5)} min/day</b>).</li>
+      ${p.reserve?`<li><b>Last ${p.reserveDays} days:</b> no new cards. Reviews and practice exams only (tab ③).</li>`:''}
+      <li>Make cards for each new lecture within a day or two of class.</li>
+    </ul>
+    ${p.short?`<div class="call warn">${p.mins} min/day isn't enough for all ${p.cards} cards (you'd need about ${Math.ceil(p.need*1.5)} min). Either study longer, choose <b>Key ideas only</b>, or learn <code>tag:highyield</code> cards first.</div>`:''}
+    <h4 style="margin-top:12px">Anki settings</h4>
+    <p style="margin:0 0 4px;font-size:15px">Click ⚙ next to the deck → <b>Options</b> → <b>Add preset</b> (name it after the course), then set:</p>
+    ${settingsTable([['New cards/day',p.newPerDay],['Maximum reviews/day','9999','Never let reviews pile up before an exam.'],['Learning steps',p.steps],['Relearning steps','10m'],['FSRS','On','Under Advanced. Anki\'s newer, smarter scheduler.'],['Desired retention',p.retention,'Higher = more reviews but better recall on exam day.'],['Maximum interval',p.maxIvl+' days','So every card comes back several times before the exam.'],['Bury new/review/interday siblings','On','Stops related cards showing up back to back.']])}
+    <p style="margin:6px 0 0;font-size:13.5px;color:var(--muted)">Estimates assume ~1.5 min per new card, including its reviews over the next weeks.</p></div>`;
+}
+function myPrompt(p){
+  const base=TPL['4-anki-deck-prompt.md'];
+  let body=base.slice(base.indexOf('\n---\n')+5).trim();
+  const course=$('q-course').value.trim(), range=$('q-range').value.trim();
+  if(course) body=body.split('[COURSE CODE]').join(course);
+  if(cram) body=body.replace('[Lectures N–M / unit]','everything on tomorrow\'s exam').split('::[unit]').join('::Cram');
+  else if(range) body=body.replace('[Lectures N–M / unit]',range).split('::[unit]').join('::'+range);
+  const s=SUBJECT[$('q-subject').value], fmts=checks('q-format'), weak=checks('q-weak');
+  const lines=['## Tailored to me','',`**Subject: ${s[0]}.** Card design that works for this subject:`,...s[1].map(x=>'- '+x),''];
+  if(fmts.length){lines.push('**The exam is mostly:**',...fmts.map(f=>'- '+FORMAT[f]),'');}
+  lines.push('**Card style:** '+STYLE[radio('style')],'');
+  if(!cram){
+    const d=radio('detail');
+    lines.push(`**Detail:** about ${PER_LEC[d]} cards per lecture. `+({key:'Only 🎯/⭐ items and the core idea of each lecture.',exam:'All 🎯/⭐ items plus the main slide content.',all:'Everything on the slides plus everything said in class, except 🚫.'})[d],'');
+  }
+  if(weak.length){lines.push('**What I find hard:**',...weak.map(w=>'- '+WEAK[w]),'');}
+  lines.push('**'+DIAG[radio('diag')]+'**','');
+  if(p&&p.newPerDay) lines.push(`**My schedule:** exam in ${p.D} days, ~${p.newPerDay} new cards a day. Put the \`highyield\` cards first in the file so I learn them first.`,'');
+  if(cram){
+    lines.push('## 🌈 SUPER CRAM: my exam is tomorrow and I know almost nothing','',
+      `- Ignore the card count above. Make only the **${p.cards} highest-yield cards** across everything on the exam, most likely tested first.`,
+      '- Start with ~10 big-picture cards: the main framework of each lecture in one card.',
+      '- Tag every card `highyield`. Only include what is most likely to earn marks, based on the 🎯/⭐ flags and the Exam blueprint if it\'s in the project.',
+      '- Short fronts and backs. No nice-to-know detail.',
+      '- After the deck, give me a one-page "if you remember nothing else" summary.','');
+  }
+  return body.replace('## Output',lines.join('\n')+'\n## Output');
+}
+const myPre=$('my-pre');
+let lastPlan={},prevDate='';
+acts($('my-acts'),()=>myPrompt(lastPlan),'my-anki-prompt.md',myPre);
+function update(){lastPlan=plan();renderPlan(lastPlan);myPre.textContent=myPrompt(lastPlan);}
+$('cram').addEventListener('click',()=>{cram=!cram;$('cram').setAttribute('aria-pressed',cram);$('cram').innerHTML=cram?'🌈 SUPER CRAM: ON 🌈':'🌈 SUPER CRAM 🌈';
+  document.querySelector('.cram-sub').textContent=cram?'Plan and prompt below are now in cram mode. Press again to undo.':'Exam tomorrow and you know nothing? Press this.';
+  if(cram){prevDate=$('s-date').value;const t=today();t.setDate(t.getDate()+1);$('s-date').value=iso(t);myPre.classList.add('show');}
+  else if(prevDate)$('s-date').value=prevDate;
+  update();if(cram)$('a6').scrollIntoView({behavior:'smooth'});});
+document.querySelectorAll('#sp-plan input,#sp-plan select').forEach(el=>{el.addEventListener('input',update);el.addEventListener('change',update);});
+(()=>{const t=today();t.setDate(t.getDate()+28);$('s-date').value=iso(t);$('s-date').min=iso(today());})();
+update();
 </script>
 </body>
 </html>

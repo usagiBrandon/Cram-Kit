@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Cram-Kit: transcripts, slides and a Claude study project</title>
-<meta name="description" content="Download every Panopto lecture transcript and Canvas slide deck in one click, then turn them into a Claude study project.">
+<meta name="description" content="Download Panopto transcripts and Canvas slides in one click, turn them into a Claude study project, analyze past papers, make practice exams and Anki flashcards.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232f5d50'/%3E%3Cpath d='M16 7v12m-5-5 5 5 5-5M9 24h14' stroke='white' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
 <style>
   :root{--bg:#f6f4ef;--ink:#1b1b1a;--muted:#6b6862;--line:#dcd8cf;--card:#fffdf8;--accent:#2f5d50;--accent-ink:#fff;--soft:#e4efe9;--warn:#8a4a12;--warn-bg:#fdf1de;--tip-bg:#eaf2fb;--tip:#1f4d80}
@@ -22,7 +22,7 @@
   kbd{border-bottom:2px solid var(--muted)}
 
   /* tabs */
-  .tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:6px;position:sticky;top:10px;z-index:5;box-shadow:0 6px 20px rgba(0,0,0,.06)}
+  .tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:6px;position:sticky;top:10px;z-index:5;box-shadow:0 6px 20px rgba(0,0,0,.06)}
   .tab{border:0;background:transparent;color:var(--ink);font:inherit;text-align:left;padding:12px 14px;border-radius:11px;cursor:pointer}
   .tab b{display:block;font-size:16px}
   .tab span{display:block;font-size:13.5px;color:var(--muted)}
@@ -92,17 +92,58 @@
   .drop{border:1.5px dashed var(--line);border-radius:12px;padding:20px;text-align:center;color:var(--muted);font-size:15px;cursor:pointer;margin-top:10px}
   .drop.over{border-color:var(--accent);color:var(--accent)}
   footer{margin-top:50px;color:var(--muted);font-size:13.5px;text-align:center}
-  @media (max-width:560px){h1{font-size:28px}.tab span{display:none}.step{padding:18px 16px}}
+
+  /* sub-tabs (Anki) */
+  .subtabs{display:flex;gap:6px;margin:22px 0 14px;border-bottom:1px solid var(--line)}
+  .subtab{border:0;background:transparent;color:var(--muted);font:inherit;font-weight:600;padding:10px 14px;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px}
+  .subtab[aria-selected=true]{color:var(--ink);border-bottom-color:var(--accent)}
+  .subtab:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+  /* forms */
+  .q{margin:14px 0 4px}
+  .q>label,.q>.ql{display:block;font-weight:600;font-size:15px;margin-bottom:6px}
+  .q small{display:block;color:var(--muted);font-size:13.5px;margin:-3px 0 6px}
+  .q select,.q input[type=date],.q input[type=number],.q input[type=text]{width:100%;max-width:340px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:inherit}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:4px 16px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chips label{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:14.5px;cursor:pointer;background:var(--bg)}
+  .chips input{accent-color:var(--accent);margin:0}
+  .chips label:has(input:checked){border-color:var(--accent);background:var(--soft)}
+  .chips label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:1px}
+  .out{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-top:14px}
+  .out h4{margin:0 0 6px;font-size:16px}
+  .out ol,.out ul{margin:6px 0;padding-left:22px}
+  .out li{margin:5px 0;font-size:15px}
+  table.cmp td:first-child{white-space:nowrap}
+  table.cmp td b{font-family:ui-monospace,Menlo,monospace;font-size:14px}
+
+  /* SUPER CRAM */
+  .cram-wrap{text-align:center;margin:6px 0 16px}
+  .cram{position:relative;border:0;cursor:pointer;font:800 22px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.08em;color:#fff;padding:18px 34px;border-radius:999px;
+    background:linear-gradient(90deg,#ff3b3b,#ff9f1a,#ffe11a,#2fd36b,#1aa3ff,#7a5cff,#ff3bd4,#ff3b3b);background-size:300% 100%;
+    text-shadow:0 2px 0 rgba(0,0,0,.35);box-shadow:0 6px 22px rgba(255,80,160,.45);animation:rainbow 2.5s linear infinite,wobble 1.6s ease-in-out infinite}
+  .cram:hover{animation-duration:1s,.5s}
+  .cram:focus-visible{outline:4px solid var(--ink);outline-offset:3px}
+  .cram[aria-pressed=true]{box-shadow:0 0 0 4px var(--ink),0 6px 22px rgba(255,80,160,.55)}
+  .cram-sub{font-size:13.5px;color:var(--muted);margin-top:8px}
+  @keyframes rainbow{to{background-position:300% 0}}
+  @keyframes wobble{0%,100%{transform:rotate(-2deg) scale(1)}50%{transform:rotate(2deg) scale(1.06)}}
+  @media (prefers-reduced-motion:reduce){.cram{animation:none}}
+  .cram-box{border:2px solid transparent;border-radius:16px;background:linear-gradient(var(--card),var(--card)) padding-box,linear-gradient(90deg,#ff3b3b,#ff9f1a,#ffe11a,#2fd36b,#1aa3ff,#7a5cff,#ff3bd4) border-box}
+  @media (max-width:700px){.tabs{grid-template-columns:1fr 1fr}}
+  @media (max-width:560px){h1{font-size:28px}.tab span{display:none}.step{padding:18px 16px}.grid2{grid-template-columns:1fr}.cram{font-size:19px;padding:16px 26px}}
 </style>
 </head>
 <body>
 <main>
   <h1>Cram-Kit</h1>
-  <p class="lede">Grab every lecture transcript and slide deck in one click each. Then turn them into a Claude tutor that knows what happened in class and what's on the exam.</p>
+  <p class="lede">Grab every lecture transcript and slide deck in one click each. Turn them into a Claude tutor, find the key exam topics from past papers, and make Anki flashcards with a study plan.</p>
 
   <div class="tabs" role="tablist" aria-label="Choose a step">
-    <button class="tab" role="tab" id="t-files" aria-controls="p-files" aria-selected="true"><b>① Gather transcripts &amp; slides</b><span>Two bookmark buttons, one click each</span></button>
-    <button class="tab" role="tab" id="t-project" aria-controls="p-project" aria-selected="false" tabindex="-1"><b>② Create the Claude project</b><span>Turn them into a tutor + study guides</span></button>
+    <button class="tab" role="tab" id="t-files" data-hash="files" aria-controls="p-files" aria-selected="true"><b>① Gather</b><span>Transcripts &amp; slides</span></button>
+    <button class="tab" role="tab" id="t-project" data-hash="project" aria-controls="p-project" aria-selected="false" tabindex="-1"><b>② Claude project</b><span>Tutor + study guides</span></button>
+    <button class="tab" role="tab" id="t-exam" data-hash="exam" aria-controls="p-exam" aria-selected="false" tabindex="-1"><b>③ Exam prep</b><span>Past papers + practice exams</span></button>
+    <button class="tab" role="tab" id="t-anki" data-hash="anki" aria-controls="p-anki" aria-selected="false" tabindex="-1"><b>④ Anki</b><span>Flashcards + study plan</span></button>
   </div>
 
   <!-- ================= TAB 1 ================= -->
@@ -238,6 +279,168 @@
         <li>Replace the doc in the project.</li>
       </ol>
     </div>
+    <p style="margin-top:28px"><a href="#exam">Next: ③ Exam prep →</a></p>
+  </section>
+
+  <!-- ================= TAB 3 ================= -->
+  <section class="panel" id="p-exam" role="tabpanel" aria-labelledby="t-exam" hidden>
+    <div class="call warn" style="margin-top:22px"><b>Practice isn't always like the real exam.</b> Some courses hand out old or off-topic practice. The prompt rates every file and down-weights ones that don't match your course.</div>
+
+    <div class="step" id="e1">
+      <div class="step-head"><div class="num">1</div><div><h3>Collect past papers</h3><p>The more real exams from your prof, the better.</p></div></div>
+      <ul>
+        <li>⭐ Past exams and quizzes from this course and prof (best)</li>
+        <li>Practice midterms, assignment and clicker questions</li>
+        <li>Review sheets, learning objectives, answer keys</li>
+      </ul>
+      <div class="call tip">No past exams? Check your school's exam archive, the course Discord, or ask upper-years.</div>
+    </div>
+
+    <div class="step" id="e2">
+      <div class="step-head"><div class="num">2</div><div><span class="who">New chat in your project</span><h3>Find the key exam topics</h3><p>Ranks topics by how often and how they're tested, and predicts the exam's layout.</p></div></div>
+      <ol>
+        <li>Attach all your past papers. Paste the <b>analysis prompt</b> and fill in the brackets.</li>
+        <li>Save the result as <b>Exam blueprint</b> and add it to the project's files.</li>
+      </ol>
+      <div class="tplname">Analysis prompt</div><div class="acts" data-t="5-exam-analysis-prompt.md"></div>
+    </div>
+
+    <div class="step" id="e3">
+      <div class="step-head"><div class="num">3</div><div><span class="who">New chat in your project</span><h3>Make a practice exam</h3><p>Same format as the real one, with new questions and a separate answer key.</p></div></div>
+      <ol>
+        <li>Paste the <b>practice exam prompt</b>.</li>
+        <li>Do it timed, without notes.</li>
+        <li>Send your answers. Claude marks them and turns every mistake into Anki cards.</li>
+      </ol>
+      <div class="tplname">Practice exam prompt</div><div class="acts" data-t="6-practice-exam-prompt.md"></div>
+      <div class="call tip">Want another? Say <code>Make another one, different questions, more on my weak topics</code>.</div>
+    </div>
+    <p style="margin-top:28px"><a href="#anki">Next: ④ Anki →</a></p>
+  </section>
+
+  <!-- ================= TAB 4 ================= -->
+  <section class="panel" id="p-anki" role="tabpanel" aria-labelledby="t-anki" hidden>
+    <div class="subtabs" role="tablist" aria-label="Anki">
+      <button class="subtab" role="tab" id="st-deck" aria-controls="sp-deck" aria-selected="true">Make the deck</button>
+      <button class="subtab" role="tab" id="st-plan" aria-controls="sp-plan" aria-selected="false" tabindex="-1">Plan + personalize</button>
+    </div>
+
+    <div id="sp-deck" role="tabpanel" aria-labelledby="st-deck">
+      <div class="step" id="a1">
+        <div class="step-head"><div class="num">1</div><div><h3>Get Anki (free)</h3></div></div>
+        <ul>
+          <li>Computer: <a href="https://apps.ankiweb.net" target="_blank" rel="noopener">apps.ankiweb.net</a> · Android: AnkiDroid (free) · iPhone: AnkiMobile (paid)</li>
+          <li>Make a free AnkiWeb account to sync between them.</li>
+        </ul>
+      </div>
+
+      <div class="step" id="a2">
+        <div class="step-head"><div class="num">2</div><div><span class="who">New chat in your project, one per unit</span><h3>Make the cards</h3><p>Exam-ready cards from your context doc and slides, with diagrams.</p></div></div>
+        <ol>
+          <li>Paste the <b>deck prompt</b> and fill in the brackets. Or use your personalized one from <a href="#" data-sub="st-plan">Plan + personalize</a>.</li>
+          <li>Claude gives you an <code>.apkg</code> (if it can run code) and a <code>.txt</code> backup.</li>
+        </ol>
+        <div class="tplname">Deck prompt</div><div class="acts" data-t="4-anki-deck-prompt.md"></div>
+      </div>
+
+      <div class="step" id="a3">
+        <div class="step-head"><div class="num">3</div><div><span class="who">Anki</span><h3>Import</h3></div></div>
+        <ul>
+          <li><b>.apkg:</b> double-click it. Done.</li>
+          <li><b>.txt:</b> <b>File → Import</b>, pick the file, check the deck name, then <b>Import</b>.</li>
+        </ul>
+        <div class="call tip"><b>Diagrams:</b> ones Claude draws work in both files. Slide snapshots only come through in the <code>.apkg</code>. Got only a <code>.txt</code>? Ask <code>Make it an .apkg with the slide images</code>.</div>
+      </div>
+
+      <div class="step" id="a4">
+        <div class="step-head"><div class="num">4</div><div><h3>Set your study settings</h3></div></div>
+        <p style="margin:6px 0">A deck file can't reliably carry its own settings. Anki uses your presets when you import. Setting it yourself takes a minute: <a href="#" data-sub="st-plan">Plan + personalize</a> gives you the exact numbers.</p>
+      </div>
+    </div>
+
+    <div id="sp-plan" role="tabpanel" aria-labelledby="st-plan" hidden>
+      <div class="cram-wrap">
+        <button type="button" class="cram" id="cram" aria-pressed="false">🌈 SUPER CRAM 🌈</button>
+        <div class="cram-sub">Exam tomorrow and you know nothing? Press this.</div>
+      </div>
+
+      <div class="step" id="a5">
+        <div class="step-head"><div class="num">1</div><div><h3>About you and the course</h3><p>Makes a flashcard prompt tuned to your subject and how you study.</p></div></div>
+        <form id="quiz" onsubmit="return false">
+          <div class="grid2">
+            <div class="q"><label for="q-course">Course</label><input type="text" id="q-course" placeholder="e.g. PSYC 101"></div>
+            <div class="q"><label for="q-range">Lectures for this deck</label><input type="text" id="q-range" placeholder="e.g. Lectures 1–4"></div>
+          </div>
+          <div class="q"><label for="q-subject">Subject</label>
+            <select id="q-subject">
+              <option value="bio">Biology / life sciences</option>
+              <option value="chem">Chemistry / biochemistry</option>
+              <option value="phys">Physics / engineering</option>
+              <option value="math">Math / statistics</option>
+              <option value="psych" selected>Psychology / social sciences</option>
+              <option value="hist">History / humanities</option>
+              <option value="lang">Languages</option>
+              <option value="cs">Computer science</option>
+              <option value="bus">Business / economics</option>
+              <option value="med">Medicine / nursing / health</option>
+              <option value="other">Other</option>
+            </select></div>
+          <div class="q"><span class="ql">Exam questions are mostly…</span>
+            <div class="chips" id="q-format">
+              <label><input type="checkbox" value="mc" checked> Multiple choice</label>
+              <label><input type="checkbox" value="sa"> Short answer</label>
+              <label><input type="checkbox" value="calc"> Calculations</label>
+              <label><input type="checkbox" value="diag"> Diagrams / labelling</label>
+              <label><input type="checkbox" value="essay"> Essays</label>
+            </div></div>
+          <div class="q"><span class="ql">Card style</span>
+            <div class="chips">
+              <label><input type="radio" name="style" value="mix" checked> Mix (recommended)</label>
+              <label><input type="radio" name="style" value="cloze"> Fill-in-the-blank</label>
+              <label><input type="radio" name="style" value="basic"> Question → answer</label>
+            </div></div>
+          <div class="q"><span class="ql">How much detail?</span>
+            <div class="chips">
+              <label><input type="radio" name="detail" value="key"> Key ideas only</label>
+              <label><input type="radio" name="detail" value="exam" checked> Exam-ready (recommended)</label>
+              <label><input type="radio" name="detail" value="all"> Everything</label>
+            </div></div>
+          <div class="q"><span class="ql">What's hard for you?</span>
+            <div class="chips" id="q-weak">
+              <label><input type="checkbox" value="terms"> Memorizing terms</label>
+              <label><input type="checkbox" value="process"> Processes / steps</label>
+              <label><input type="checkbox" value="apply"> Applying to new questions</label>
+              <label><input type="checkbox" value="visual"> Diagrams / structures</label>
+              <label><input type="checkbox" value="formulas"> Formulas</label>
+            </div></div>
+          <div class="q"><span class="ql">Diagrams on cards</span>
+            <div class="chips">
+              <label><input type="radio" name="diag" value="both" checked> Both (recommended)</label>
+              <label><input type="radio" name="diag" value="draw"> Drawn by Claude</label>
+              <label><input type="radio" name="diag" value="slides"> Slide snapshots</label>
+              <label><input type="radio" name="diag" value="none"> None</label>
+            </div></div>
+        </form>
+      </div>
+
+      <div class="step" id="a6">
+        <div class="step-head"><div class="num">2</div><div><h3>Your schedule</h3><p>Works out how many cards a day and the Anki settings to use.</p></div></div>
+        <div class="grid2">
+          <div class="q"><label for="s-date">Exam date</label><input type="date" id="s-date"></div>
+          <div class="q"><label for="s-lec">Lectures on the exam</label><input type="number" id="s-lec" min="1" max="80" value="12"></div>
+          <div class="q"><label for="s-days">Study days per week</label>
+            <select id="s-days"><option>3</option><option>4</option><option>5</option><option selected>6</option><option>7</option></select></div>
+          <div class="q"><label for="s-min">Minutes per study day</label><input type="number" id="s-min" min="5" max="600" step="5" value="30"></div>
+        </div>
+        <div id="plan-out"></div>
+      </div>
+
+      <div class="step" id="a7">
+        <div class="step-head"><div class="num">3</div><div><span class="who">New chat in your project</span><h3>Your flashcard prompt</h3><p>Paste it to make the deck. It updates as you change the answers above.</p></div></div>
+        <div class="acts" id="my-acts"></div>
+        <pre class="tp" id="my-pre"></pre>
+      </div>
+    </div>
   </section>
 
   <footer>Cram-Kit · runs in your browser · no data collected</footer>
@@ -246,23 +449,29 @@
 <script type="application/json" id="tpl">__TEMPLATES__</script>
 <script>
 // ---------- Tabs (with #hash so links can open a tab) ----------
-const tabs=[...document.querySelectorAll('[role=tab]')];
 const panelFor=t=>document.getElementById(t.getAttribute('aria-controls'));
-function select(t,focus){
-  tabs.forEach(x=>{const on=x===t;x.setAttribute('aria-selected',on);x.tabIndex=on?0:-1;panelFor(x).hidden=!on;});
-  if(focus)t.focus();
-  const id=t.id==='t-project'?'#project':'#files'; const cur=location.hash; const inP=cur==='#project'||/^#p\d/.test(cur); if(!cur||inP!==(id==='#project')) history.replaceState(null,'',id);
+function tabGroup(list,onSelect){
+  const sel=(t,focus)=>{list.forEach(x=>{const on=x===t;x.setAttribute('aria-selected',on);x.tabIndex=on?0:-1;panelFor(x).hidden=!on;});if(focus)t.focus();if(onSelect)onSelect(t);};
+  list.forEach((t,i)=>{
+    t.addEventListener('click',()=>{sel(t);window.scrollTo({top:0});});
+    t.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();sel(list[(i+(e.key==='ArrowRight'?1:list.length-1))%list.length],true);}});
+  });
+  return sel;
 }
-tabs.forEach((t,i)=>{
-  t.addEventListener('click',()=>{select(t);window.scrollTo({top:0});});
-  t.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();select(tabs[(i+(e.key==='ArrowRight'?1:tabs.length-1))%tabs.length],true);}});
-});
+const tabs=[...document.querySelectorAll('.tabs [role=tab]')];
+const tabOf=el=>tabs.find(t=>el.closest('#'+t.getAttribute('aria-controls')));
+const select=tabGroup(tabs,t=>{const cur=document.getElementById(location.hash.slice(1));if(!cur||tabOf(cur)!==t)history.replaceState(null,'','#'+t.dataset.hash);});
+const subtabs=[...document.querySelectorAll('.subtab')];
+const selectSub=tabGroup(subtabs);
+document.querySelectorAll('[data-sub]').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();selectSub(document.getElementById(a.dataset.sub));document.getElementById('p-anki').scrollIntoView();window.scrollBy(0,-120);}));
 function fromHash(){
   const h=location.hash.slice(1); if(!h) return;
-  const el=document.getElementById(h);
-  const inProject=h==='project'||(el&&el.closest('#p-project'));
-  select(inProject?tabs[1]:tabs[0]);
-  if(el&&h!=='project'&&h!=='files') setTimeout(()=>el.scrollIntoView(),0);
+  const byHash=tabs.find(t=>t.dataset.hash===h);
+  if(byHash){select(byHash);window.scrollTo({top:0});return;}
+  const el=document.getElementById(h); if(!el) return;
+  const t=tabOf(el); if(t) select(t);
+  const sp=el.closest('#sp-plan,#sp-deck'); if(sp) selectSub(subtabs.find(s=>s.getAttribute('aria-controls')===sp.id));
+  setTimeout(()=>el.scrollIntoView(),0);
 }
 window.addEventListener('hashchange',fromHash); fromHash();
 
@@ -309,15 +518,139 @@ drop.ondrop=e=>{e.preventDefault();drop.classList.remove('over');handle(e.dataTr
 
 // ---------- Templates: copy / download / preview ----------
 const TPL=JSON.parse(document.getElementById('tpl').textContent);
-document.querySelectorAll('.acts[data-t]').forEach(box=>{
-  const name=box.dataset.t, text=TPL[name];
+function acts(box,getText,file,pre){
   const mk=(label,cls,fn)=>{const b=document.createElement('button');b.type='button';b.textContent=label;if(cls)b.className=cls;b.onclick=()=>fn(b);box.appendChild(b);return b;};
-  const pre=document.createElement('pre');pre.className='tp';pre.textContent=text;
-  mk('Copy','',async b=>{try{await navigator.clipboard.writeText(text);}catch(e){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();}b.textContent='Copied ✓';setTimeout(()=>b.textContent='Copy',1600);});
-  mk('Download .md','ghost',()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'text/markdown'}));a.download=name.replace(/^\d-/,'');document.body.appendChild(a);a.click();a.remove();});
+  if(!pre){pre=document.createElement('pre');pre.className='tp';box.after(pre);}
+  pre.textContent=getText();
+  mk('Copy','',async b=>{const text=getText();try{await navigator.clipboard.writeText(text);}catch(e){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();}b.textContent='Copied ✓';setTimeout(()=>b.textContent='Copy',1600);});
+  mk('Download .md','ghost',()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([getText()],{type:'text/markdown'}));a.download=file;document.body.appendChild(a);a.click();a.remove();});
   mk('Preview','ghost',b=>{pre.classList.toggle('show');b.textContent=pre.classList.contains('show')?'Hide preview':'Preview';});
-  box.after(pre);
-});
+  return pre;
+}
+document.querySelectorAll('.acts[data-t]').forEach(box=>{const name=box.dataset.t;acts(box,()=>TPL[name],name.replace(/^\d-/,''));});
+
+// ---------- Anki: planner + personalized prompt + SUPER CRAM ----------
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let cram=false;
+const PER_LEC={key:15,exam:30,all:50};
+const SUBJECT={
+  bio:['Biology / life sciences',['Cloze cards, one fact per deletion, with a one-line "why" in Back Extra (the style of the big MCAT decks like AnKing and MileDown).','Processes and pathways as ordered steps: one card per step ("After X, what happens next?") plus one big-picture diagram card.','Image occlusion for structures, anatomy, cycles and pathways.','Tell-apart cards for look-alikes (e.g. mitosis vs meiosis).']],
+  chem:['Chemistry / biochemistry',['Reaction cards: reactants + conditions → product, and the reverse.','Mechanisms one step at a time, with arrow-pushing diagrams.','Trends with the reason, not just the direction.','Structures and functional groups as image cards; equations with units and when they apply.']],
+  phys:['Physics / engineering',['Formula cards: the equation, each symbol with units, and when it does or doesn\'t apply.','"Which equation or principle fits this situation?" cards.','Short worked problems split one step per card. Full problems belong in practice exams, not Anki.','Free-body, circuit and setup diagrams drawn as SVG.']],
+  math:['Math / statistics',['Definitions and theorems with their exact conditions.','"Which method or test do I use when…" decision cards.','Tiny worked examples (one step per card) and common-mistake cards.','Anki is for the tools; long problems go in practice exams.']],
+  psych:['Psychology / social sciences',['Term → definition AND definition → term, like the Mr. Pankow / AnKing psych-soc MCAT cards.','Scenario cards: a 1–2 sentence example → name the concept. This is how MC exams ask.','Researcher → study → finding cards; theory stages in order.','Tell-apart cards for easily confused terms.']],
+  hist:['History / humanities',['Who / what / when / why it matters, with cause → effect chains.','No date-only cards unless dates are tested.','Key quotes or sources → author, context and significance.','Theme cards that link events, for essay answers.']],
+  lang:['Languages',['Vocab both directions, each with an example sentence (cloze the word).','Grammar patterns as cloze sentences.','Gender and irregular forms on their own cards.']],
+  cs:['Computer science',['Concept and definition cards, including time/space complexity.','"What does this code output?" cards with short snippets in <code>.','Trade-off cards: when to use X vs Y.','Diagrams for data structures and algorithm steps.']],
+  bus:['Business / economics',['Definitions, and formulas/ratios with what they tell you.','Graph cards: "what shifts, and which way, when…" with SVG graphs.','Cause → effect chains for policy and market events.','Short calculation cards, one step at a time.']],
+  med:['Medicine / nursing / health',['AnKing-style cloze with a rich Back Extra (mechanism, why it matters).','Mechanism → presentation → diagnosis → treatment chains.','Image occlusion for anatomy, histology and pathways.','Normal values and drug classes as their own cards.']],
+  other:['Other',['A mix of cloze and Q&A, one fact per card, plus application cards.']]
+};
+const FORMAT={mc:'Multiple choice: tell-apart cards for similar terms and the traps distractors use.',sa:'Short answer: cards that make me produce the full definition plus a key example, the way a marker wants it.',calc:'Calculations: formula cards (when to use, variables, units) and mini worked problems, one step per card.',diag:'Diagrams/labelling: image occlusion cards for every figure likely to be on the exam.',essay:'Essays: for each big theme, cards for the thesis, 3 supporting points with evidence, and a counterargument.'};
+const WEAK={terms:'Memorizing terms: add a memory hook (mnemonic, story or the prof\'s example) to every term card.',process:'Processes: an ordered-steps card for each process, and "what comes before/after X" cards.',apply:'Applying ideas: at least 2 scenario/application cards for every key concept.',visual:'Diagrams/structures: image occlusion and "draw it from memory, then compare" cards.',formulas:'Formulas: a "when do I use this?" card and a units card for every formula.'};
+const STYLE={mix:'Mix: cloze for facts and terms, Q&A for why/how and application.',cloze:'Mostly fill-in-the-blank (cloze). Use Q&A only where cloze doesn\'t work.',basic:'Mostly question → answer (Basic). Use cloze only for lists and definitions.'};
+const DIAG={both:'Use both diagram types as described above.',draw:'Diagrams: only ones you draw as inline SVG. No slide snapshots.',slides:'Diagrams: only slide snapshots (image occlusion style). Don\'t draw your own.',none:'No diagrams. Text-only cards.'};
+
+const radio=n=>(document.querySelector(`input[name=${n}]:checked`)||{}).value;
+const checks=id=>[...document.querySelectorAll(`#${id} input:checked`)].map(i=>i.value);
+const today=()=>{const d=new Date();d.setHours(0,0,0,0);return d;};
+const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+
+function plan(){
+  const lec=Math.max(1,+$('s-lec').value||1), perLec=PER_LEC[radio('detail')], cards=lec*perLec;
+  const per=+$('s-days').value, mins=Math.max(5,+$('s-min').value||30);
+  if(cram) return {cram:true,cards:Math.min(150,Math.max(60,lec*8))};
+  if(!$('s-date').value) return {err:'Pick your exam date.'};
+  const D=Math.round((new Date($('s-date').value+'T00:00')-today())/864e5);
+  if(D<1) return {err:'Pick a date after today.'};
+  if(D<=2) return {err:'Exam in '+D+' day'+(D>1?'s':'')+'? Press SUPER CRAM.',cramHint:true};
+  const studyDays=Math.max(1,Math.round(D*per/7));
+  const reserve=D>=7?Math.max(1,Math.round(studyDays*.2)):0;
+  const newDays=Math.max(1,studyDays-reserve);
+  const need=Math.ceil(cards/newDays), fit=Math.max(1,Math.floor(mins/1.5));
+  return {D,cards,lec,perLec,studyDays,reserve,newDays,need,fit,mins,
+    newPerDay:Math.min(need,fit),short:need>fit,
+    steps:D<=7?'1m 10m 1h':'1m 10m',
+    retention:D>30?'0.90':D>7?'0.92':'0.95',
+    maxIvl:Math.max(2,Math.round(D/3)),
+    reserveDays:Math.ceil(reserve*7/per)};
+}
+function settingsTable(rows){return '<table class="cmp"><tr><th>Setting</th><th>Value</th></tr>'+rows.map(r=>`<tr><td>${r[0]}</td><td><b>${r[1]}</b>${r[2]?'<br><span style="color:var(--muted);font-size:13.5px">'+r[2]+'</span>':''}</td></tr>`).join('')+'</table>';}
+function renderPlan(p){
+  const o=$('plan-out');
+  if(p.err){o.innerHTML=`<div class="call ${p.cramHint?'warn':'tip'}">${p.err}</div>`;return;}
+  const course=esc($('q-course').value.trim()||'your course');
+  if(p.cram){
+    o.innerHTML=`<div class="out cram-box"><h4>🌈 SUPER CRAM plan: exam tomorrow</h4>
+      <ol>
+        <li><b>Now (15 min):</b> paste your SUPER CRAM prompt (step 3) in a new chat in your project. You get ~${p.cards} cards on only the most-tested ideas.</li>
+        <li><b>Import it</b>, but don't study the normal deck. Make a filtered deck (settings below).</li>
+        <li><b>Pass 1 (2–3 h):</b> go through every card. 5-min break every 45 min.</li>
+        <li><b>Pass 2:</b> rebuild the filtered deck with <code>rated:1:1</code> to redo only what you missed today.</li>
+        <li><b>Test yourself:</b> ask Claude for <code>15 exam-style questions on the top topics</code> (tab ③).</li>
+        <li><b>Sleep at least 6 hours.</b> Sleep is when memories stick. An all-nighter scores worse.</li>
+        <li><b>Morning (30 min):</b> rebuild with <code>rated:2:1</code> and do your misses once more.</li>
+      </ol>
+      <h4 style="margin-top:12px">Filtered deck settings</h4>
+      <p style="margin:0 0 4px;font-size:15px"><b>Tools → Create Filtered Deck</b></p>
+      ${settingsTable([['Search',`deck:"${course}" tag:highyield`,'Replace with your deck name. Drop the tag part to include everything.'],['Limit','9999'],['Cards selected by','Order added','Lecture order, so ideas build on each other.'],['Reschedule cards based on my answers','Off','Keeps your normal deck\'s schedule clean for later.'],['Again / Hard / Good delay','60 / 600 / 0 s','Missed cards come back in 1 min, hard ones in 10.']])}</div>`;
+    return;
+  }
+  o.innerHTML=`<div class="out">
+    <h4>Your plan</h4>
+    <ul>
+      <li><b>${p.D} days</b> until the exam, about <b>${p.studyDays} study days</b>. Deck size: about <b>${p.cards} cards</b> (${p.lec} lectures × ${p.perLec}).</li>
+      <li>Learn <b>${p.newPerDay} new cards</b> per study day, plus reviews (about <b>${Math.round(p.newPerDay*1.5)} min/day</b>).</li>
+      ${p.reserve?`<li><b>Last ${p.reserveDays} days:</b> no new cards. Reviews and practice exams only (tab ③).</li>`:''}
+      <li>Make cards for each new lecture within a day or two of class.</li>
+    </ul>
+    ${p.short?`<div class="call warn">${p.mins} min/day isn't enough for all ${p.cards} cards (you'd need about ${Math.ceil(p.need*1.5)} min). Either study longer, choose <b>Key ideas only</b>, or learn <code>tag:highyield</code> cards first.</div>`:''}
+    <h4 style="margin-top:12px">Anki settings</h4>
+    <p style="margin:0 0 4px;font-size:15px">Click ⚙ next to the deck → <b>Options</b> → <b>Add preset</b> (name it after the course), then set:</p>
+    ${settingsTable([['New cards/day',p.newPerDay],['Maximum reviews/day','9999','Never let reviews pile up before an exam.'],['Learning steps',p.steps],['Relearning steps','10m'],['FSRS','On','Under Advanced. Anki\'s newer, smarter scheduler.'],['Desired retention',p.retention,'Higher = more reviews but better recall on exam day.'],['Maximum interval',p.maxIvl+' days','So every card comes back several times before the exam.'],['Bury new/review/interday siblings','On','Stops related cards showing up back to back.']])}
+    <p style="margin:6px 0 0;font-size:13.5px;color:var(--muted)">Estimates assume ~1.5 min per new card, including its reviews over the next weeks.</p></div>`;
+}
+function myPrompt(p){
+  const base=TPL['4-anki-deck-prompt.md'];
+  let body=base.slice(base.indexOf('\n---\n')+5).trim();
+  const course=$('q-course').value.trim(), range=$('q-range').value.trim();
+  if(course) body=body.split('[COURSE CODE]').join(course);
+  if(cram) body=body.replace('[Lectures N–M / unit]','everything on tomorrow\'s exam').split('::[unit]').join('::Cram');
+  else if(range) body=body.replace('[Lectures N–M / unit]',range).split('::[unit]').join('::'+range);
+  const s=SUBJECT[$('q-subject').value], fmts=checks('q-format'), weak=checks('q-weak');
+  const lines=['## Tailored to me','',`**Subject: ${s[0]}.** Card design that works for this subject:`,...s[1].map(x=>'- '+x),''];
+  if(fmts.length){lines.push('**The exam is mostly:**',...fmts.map(f=>'- '+FORMAT[f]),'');}
+  lines.push('**Card style:** '+STYLE[radio('style')],'');
+  if(!cram){
+    const d=radio('detail');
+    lines.push(`**Detail:** about ${PER_LEC[d]} cards per lecture. `+({key:'Only 🎯/⭐ items and the core idea of each lecture.',exam:'All 🎯/⭐ items plus the main slide content.',all:'Everything on the slides plus everything said in class, except 🚫.'})[d],'');
+  }
+  if(weak.length){lines.push('**What I find hard:**',...weak.map(w=>'- '+WEAK[w]),'');}
+  lines.push('**'+DIAG[radio('diag')]+'**','');
+  if(p&&p.newPerDay) lines.push(`**My schedule:** exam in ${p.D} days, ~${p.newPerDay} new cards a day. Put the \`highyield\` cards first in the file so I learn them first.`,'');
+  if(cram){
+    lines.push('## 🌈 SUPER CRAM: my exam is tomorrow and I know almost nothing','',
+      `- Ignore the card count above. Make only the **${p.cards} highest-yield cards** across everything on the exam, most likely tested first.`,
+      '- Start with ~10 big-picture cards: the main framework of each lecture in one card.',
+      '- Tag every card `highyield`. Only include what is most likely to earn marks, based on the 🎯/⭐ flags and the Exam blueprint if it\'s in the project.',
+      '- Short fronts and backs. No nice-to-know detail.',
+      '- After the deck, give me a one-page "if you remember nothing else" summary.','');
+  }
+  return body.replace('## Output',lines.join('\n')+'\n## Output');
+}
+const myPre=$('my-pre');
+let lastPlan={},prevDate='';
+acts($('my-acts'),()=>myPrompt(lastPlan),'my-anki-prompt.md',myPre);
+function update(){lastPlan=plan();renderPlan(lastPlan);myPre.textContent=myPrompt(lastPlan);}
+$('cram').addEventListener('click',()=>{cram=!cram;$('cram').setAttribute('aria-pressed',cram);$('cram').innerHTML=cram?'🌈 SUPER CRAM: ON 🌈':'🌈 SUPER CRAM 🌈';
+  document.querySelector('.cram-sub').textContent=cram?'Plan and prompt below are now in cram mode. Press again to undo.':'Exam tomorrow and you know nothing? Press this.';
+  if(cram){prevDate=$('s-date').value;const t=today();t.setDate(t.getDate()+1);$('s-date').value=iso(t);myPre.classList.add('show');}
+  else if(prevDate)$('s-date').value=prevDate;
+  update();if(cram)$('a6').scrollIntoView({behavior:'smooth'});});
+document.querySelectorAll('#sp-plan input,#sp-plan select').forEach(el=>{el.addEventListener('input',update);el.addEventListener('change',update);});
+(()=>{const t=today();t.setDate(t.getDate()+28);$('s-date').value=iso(t);$('s-date').min=iso(today());})();
+update();
 </script>
 </body>
 </html>
