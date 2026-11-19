@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lecture Grabber: transcripts, slides and a Claude study project</title>
+<meta name="description" content="Download every Panopto lecture transcript and Canvas slide deck in one click, then turn them into a Claude study project.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232f5d50'/%3E%3Cpath d='M16 7v12m-5-5 5 5 5-5M9 24h14' stroke='white' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+  :root{--bg:#f6f4ef;--ink:#1b1b1a;--muted:#6b6862;--line:#dcd8cf;--card:#fffdf8;--accent:#2f5d50;--accent-ink:#fff;--soft:#e4efe9;--warn:#8a4a12;--warn-bg:#fdf1de;--tip-bg:#eaf2fb;--tip:#1f4d80}
+  @media (prefers-color-scheme:dark){:root{--bg:#141413;--ink:#ece9e2;--muted:#a19d94;--line:#2e2d2a;--card:#1c1c1a;--accent:#7fb8a4;--accent-ink:#0f1a16;--soft:#1f2c27;--warn:#f0b27a;--warn-bg:#2e2416;--tip-bg:#17222f;--tip:#9cc3ef}}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+  main{max-width:760px;margin:0 auto;padding:48px 22px 90px}
+  h1{font:600 34px/1.12 ui-serif,Georgia,serif;margin:0 0 10px;letter-spacing:-.01em}
+  h2{font:600 24px/1.2 ui-serif,Georgia,serif;margin:44px 0 8px}
+  h3{font-size:18px;margin:0 0 6px}
+  .lede{color:var(--muted);margin:0 0 28px;font-size:17px}
+  a{color:var(--accent)}
+  code,kbd{font:13.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--line);padding:1px 6px;border-radius:5px}
+  kbd{border-bottom:2px solid var(--muted)}
+
+  /* tabs */
+  .tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:6px;position:sticky;top:10px;z-index:5;box-shadow:0 6px 20px rgba(0,0,0,.06)}
+  .tab{border:0;background:transparent;color:var(--ink);font:inherit;text-align:left;padding:12px 14px;border-radius:11px;cursor:pointer}
+  .tab b{display:block;font-size:16px}
+  .tab span{display:block;font-size:13.5px;color:var(--muted)}
+  .tab[aria-selected=true]{background:var(--accent);color:var(--accent-ink)}
+  .tab[aria-selected=true] span{color:var(--accent-ink);opacity:.85}
+  .tab:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+  .panel[hidden]{display:none}
+
+  /* overview strip */
+  .overview{display:flex;gap:6px;flex-wrap:wrap;margin:22px 0 4px;font-size:14px;color:var(--muted)}
+  .overview a{text-decoration:none;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:3px 11px}
+  .overview a:hover{border-color:var(--accent);color:var(--accent)}
+
+  /* steps */
+  .step{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 22px 18px;margin:0 0 14px;scroll-margin-top:110px}
+  .step-head{display:flex;gap:14px;align-items:flex-start;margin-bottom:6px}
+  .num{flex:none;width:32px;height:32px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-weight:700;font-size:15px}
+  .step-head p{margin:2px 0 0;color:var(--muted);font-size:15px}
+  .step ol,.step ul{margin:10px 0 6px;padding-left:22px}
+  .step li{margin:7px 0}
+  .step li::marker{color:var(--muted)}
+  .who{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);margin-bottom:2px}
+  .call{border-radius:10px;padding:10px 14px;margin:12px 0 4px;font-size:15px}
+  .call.tip{background:var(--tip-bg);color:var(--tip)}
+  .call.warn{background:var(--warn-bg);color:var(--warn)}
+  .call b{font-weight:700}
+
+  .bm{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:var(--accent-ink);text-decoration:none;font-weight:600;padding:11px 18px;border-radius:999px;cursor:grab;user-select:none;box-shadow:0 2px 0 rgba(0,0,0,.15)}
+  .bm:active{cursor:grabbing}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  input[type=url]{flex:1;min-width:0;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:inherit}
+  input:focus{outline:2px solid var(--accent);outline-offset:1px}
+  button.solid{padding:11px 16px;border:0;border-radius:10px;background:var(--ink);color:var(--bg);font:inherit;font-weight:600;cursor:pointer}
+  button.solid:disabled{opacity:.4;cursor:default}
+  .msg{font-size:14px;margin:8px 0 0;min-height:1.2em}
+  .msg.err{color:var(--warn)}
+
+  /* drag illustration */
+  .demo{border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:12px 0 6px;font-size:13px;background:var(--bg)}
+  .demo .chrome{display:flex;gap:6px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--line)}
+  .demo .dot{width:10px;height:10px;border-radius:50%;background:var(--line)}
+  .demo .addr{flex:1;background:var(--card);border-radius:6px;padding:3px 10px;color:var(--muted)}
+  .demo .bar{display:flex;gap:8px;padding:6px 10px;border-bottom:1px solid var(--line);min-height:34px;align-items:center}
+  .demo .chip{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:2px 9px;white-space:nowrap}
+  .demo .chip.new{border-color:var(--accent);color:var(--accent);font-weight:600;animation:pop 3.2s ease-in-out infinite}
+  .demo .body{padding:16px 10px 18px;position:relative;height:70px}
+  .demo .drag{position:absolute;left:30px;top:22px;background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:4px 12px;font-weight:600;animation:drag 3.2s ease-in-out infinite}
+  @keyframes drag{0%,15%{transform:translate(0,0);opacity:1}55%{transform:translate(150px,-62px);opacity:.9}60%,100%{transform:translate(150px,-62px);opacity:0}}
+  @keyframes pop{0%,55%{opacity:0}62%,100%{opacity:1}}
+  @media (prefers-reduced-motion:reduce){.demo .drag{animation:none;opacity:.3}.demo .chip.new{animation:none}}
+
+  /* templates */
+  .acts{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 2px}
+  .acts button{padding:8px 13px;font:inherit;font-size:14px;font-weight:600;border-radius:9px;cursor:pointer;border:1px solid var(--ink);background:var(--ink);color:var(--bg)}
+  .acts .ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+  .tplname{font-size:13.5px;color:var(--muted);margin-top:12px}
+  pre.tp{display:none;white-space:pre-wrap;font:12.5px/1.5 ui-monospace,Menlo,monospace;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;max-height:360px;overflow:auto;margin:10px 0 0}
+  pre.tp.show{display:block}
+
+  table.cmp{width:100%;border-collapse:collapse;font-size:14.5px;margin:10px 0}
+  table.cmp th,table.cmp td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:left;vertical-align:top}
+  table.cmp th{color:var(--muted);font-weight:600}
+
+  details.faq{border-top:1px solid var(--line);padding:14px 0}
+  details.faq summary{cursor:pointer;font-weight:600}
+  details.faq p,details.faq li{color:var(--muted);font-size:15px}
+  .drop{border:1.5px dashed var(--line);border-radius:12px;padding:20px;text-align:center;color:var(--muted);font-size:15px;cursor:pointer;margin-top:10px}
+  .drop.over{border-color:var(--accent);color:var(--accent)}
+  footer{margin-top:50px;color:var(--muted);font-size:13.5px;text-align:center}
+  @media (max-width:560px){h1{font-size:28px}.tab span{display:none}.step{padding:18px 16px}}
+</style>
+</head>
+<body>
+<main>
+  <h1>Lecture Grabber</h1>
+  <p class="lede">Grab every lecture transcript and slide deck in one click each. Then turn them into a Claude tutor that knows what happened in class and what's on the exam.</p>
+
+  <div class="tabs" role="tablist" aria-label="Choose a step">
+    <button class="tab" role="tab" id="t-files" aria-controls="p-files" aria-selected="true"><b>① Gather transcripts &amp; slides</b><span>Two bookmark buttons, one click each</span></button>
+    <button class="tab" role="tab" id="t-project" aria-controls="p-project" aria-selected="false" tabindex="-1"><b>② Create the Claude project</b><span>Turn them into a tutor + study guides</span></button>
+  </div>
+
+  <!-- ================= TAB 1 ================= -->
+  <section class="panel" id="p-files" role="tabpanel" aria-labelledby="t-files">
+    <div class="call tip" style="margin-top:22px">Use a computer with Chrome, Edge or Firefox. Nothing to install. Everything runs in your browser.</div>
+
+    <div class="step" id="f1">
+      <div class="step-head"><div class="num">1</div><div><h3>Install the buttons (once)</h3></div></div>
+      <ol>
+        <li>Show your bookmarks bar: <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> (Mac) or <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> (Windows).</li>
+        <li><b>Drag</b> both buttons onto the bar. Don't click them here.</li>
+      </ol>
+      <div class="row" style="margin:12px 0 4px">
+        <a class="bm" href="__BOOKMARKLET__" onclick="event.preventDefault();alert('Drag this button up to your bookmarks bar instead of clicking it.')">⬇ Get transcripts</a>
+        <a class="bm" href="__CANVAS__" onclick="event.preventDefault();alert('Drag this button up to your bookmarks bar instead of clicking it.')">⬇ Get slides</a>
+      </div>
+      <div class="demo" aria-hidden="true">
+        <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="addr">your browser</span></div>
+        <div class="bar"><span class="chip">Canvas</span><span class="chip">Gmail</span><span class="chip new">⬇ Get transcripts</span></div>
+        <div class="body"><span class="drag">⬇ Get transcripts</span></div>
+      </div>
+      <div class="call warn">If this page updates, delete the old bookmarks and drag the new ones in.</div>
+    </div>
+
+    <div class="step" id="f2">
+      <div class="step-head"><div class="num">2</div><div><span class="who">Panopto</span><h3>Get the transcripts</h3></div></div>
+      <ol>
+        <li>Open your course's Panopto folder and wait for the list to load. (More than 25 lectures? Set <i>Results per page</i> to the max.)
+          <form class="row" id="f" style="margin-top:8px">
+            <input type="url" id="u" placeholder="Paste a Panopto or Canvas link to open it" required aria-label="Panopto or Canvas link">
+            <button class="solid" id="go" disabled>Open</button>
+          </form>
+          <div class="msg" id="m"></div></li>
+        <li>Click <b>⬇ Get transcripts</b>.</li>
+        <li>A zip downloads: one <code>.md</code> per lecture (with timestamps) and one combined file.</li>
+      </ol>
+    </div>
+
+    <div class="step" id="f3">
+      <div class="step-head"><div class="num">3</div><div><span class="who">Canvas</span><h3>Get the slides</h3></div></div>
+      <ol>
+        <li>Open any page in the course on Canvas.</li>
+        <li>Click <b>⬇ Get slides</b>. A list of every course file pops up.</li>
+        <li>Pick <b>Best version</b> (recommended), <b>Only PPTX</b> or <b>Only PDF</b>, then press <b>Download</b>.</li>
+        <li><b>First time only:</b> Chrome blocks everything after the first file. Click the blocked-download icon at the right of the address bar → <b>Always allow</b> → press <b>Retry</b>.</li>
+      </ol>
+      <div class="call tip"><b>PPTX vs PDF:</b> PPTX includes text hidden behind click-to-reveal animations, so it's better for Claude. PDF is better for GoodNotes.</div>
+    </div>
+
+    <details class="faq"><summary>Something not working?</summary>
+      <ul>
+        <li><b>Nothing happens:</b> reload the page, wait for it to load, then click again. Safari is fussy, so use Chrome.</li>
+        <li><b>"No recordings found":</b> you're not on a Panopto folder, or it hasn't loaded yet.</li>
+        <li><b>Lectures "without captions":</b> Panopto hasn't made them yet. Try again tomorrow.</li>
+        <li><b>Only one slide downloaded:</b> do the "Always allow" step above, or use the ⬇ next to each file.</li>
+        <li><b>No files on Canvas:</b> the prof hosts slides elsewhere. Check "External links" in the pop-up.</li>
+      </ul>
+    </details>
+    <details class="faq"><summary>Have .srt caption files? Convert them here</summary>
+      <div class="drop" id="drop" tabindex="0">Drop .srt files here, or click to choose<input type="file" id="pick" accept=".srt,.vtt,.txt" multiple hidden></div>
+    </details>
+    <details class="faq"><summary>Is it safe?</summary>
+      <p>The buttons run inside your own logged-in Panopto or Canvas tab and use their built-in download links. They never see your password, and nothing is sent to this site.</p>
+    </details>
+
+    <p style="margin-top:28px"><a href="#project" onclick="setTimeout(()=>window.scrollTo({top:0}),0)">Got your files? Go to ② Create the Claude project →</a></p>
+  </section>
+
+  <!-- ================= TAB 2 ================= -->
+  <section class="panel" id="p-project" role="tabpanel" aria-labelledby="t-project" hidden>
+    <div class="call warn" style="margin-top:22px"><b>Check your syllabus first.</b> Some profs don't allow lecture recordings or transcripts in AI tools. If so, use slides only. It all still works.</div>
+    <div class="call tip">Free Claude works (up to 5 projects). Pro handles bigger courses.</div>
+
+    <div class="step" id="p1">
+      <div class="step-head"><div class="num">1</div><div><span class="who">New chat, outside any project</span><h3>Build the lecture context doc</h3><p>Turns each lecture into one page: what happened, what was said beyond the slides, and what's on the exam.</p></div></div>
+      <ol>
+        <li>Download the <b>doc skeleton</b> and open it in a text editor.</li>
+        <li>Start a new chat. Attach the transcripts and slides for <b>2–4 lectures</b> (1–2 on Free).</li>
+        <li>Paste the <b>builder prompt</b>, fill in the brackets at the top, and send. Type <code>continue</code> if it stops.</li>
+        <li>Paste the result into your doc. Repeat in a new chat for the next lectures.</li>
+      </ol>
+      <div class="tplname">Builder prompt</div><div class="acts" data-t="1-context-builder-prompt.md"></div>
+      <div class="tplname">Doc skeleton</div><div class="acts" data-t="0-context-doc-skeleton.md"></div>
+    </div>
+
+    <div class="step" id="p2">
+      <div class="step-head"><div class="num">2</div><div><span class="who">claude.ai → Projects</span><h3>Create the project</h3></div></div>
+      <ol>
+        <li><b>Projects</b> → <b>New project</b>. Name it after the course.</li>
+        <li>Copy the <b>tutor instructions</b>, fill in the brackets, and paste them into the project's <b>Instructions</b>.</li>
+      </ol>
+      <div class="tplname">Tutor instructions</div><div class="acts" data-t="2-project-instructions.md"></div>
+    </div>
+
+    <div class="step" id="p3">
+      <div class="step-head"><div class="num">3</div><div><span class="who">Project → Files</span><h3>Upload files</h3></div></div>
+      <ul>
+        <li>✅ Your context doc (essential)</li>
+        <li>✅ Slides as PDF</li>
+        <li>✅ Learning objectives, if you have them</li>
+        <li>✅ The study-guide prompt from step 5</li>
+        <li>❌ Not the raw transcripts. The context doc replaces them.</li>
+      </ul>
+      <div class="call tip">On Free, if the capacity bar goes over 100%, remove slides first and keep the context doc.</div>
+    </div>
+
+    <div class="step" id="p4">
+      <div class="step-head"><div class="num">4</div><div><h3>Ask it things</h3><p>New chat inside the project. Try:</p></div></div>
+      <ul>
+        <li><code>What happened in Lecture 7?</code></li>
+        <li><code>I missed class on Oct 20, catch me up</code></li>
+        <li><code>Quiz me on Lectures 10–12, exam style</code></li>
+        <li><code>What's on the final? Make a checklist</code></li>
+        <li><code>Is X tested?</code></li>
+      </ul>
+      <div class="call tip">Answers end with a scope tag like <i>🎯 on the exam (L6, 23:10)</i> or <i>🚫 not tested</i>.</div>
+    </div>
+
+    <div class="step" id="p5">
+      <div class="step-head"><div class="num">5</div><div><span class="who">One chat per unit</span><h3>Make study guides</h3><p>Interactive pages with diagrams, quizzes and a cheat sheet.</p></div></div>
+      <ol>
+        <li>New chat in the project → <code>Make a study guide for Lectures 15–17</code> (or paste the prompt below).</li>
+        <li>Type <code>continue</code> if it's cut off. Download or publish it to keep it.</li>
+      </ol>
+      <div class="tplname">Study-guide prompt</div><div class="acts" data-t="3-study-guide-prompt.md"></div>
+    </div>
+
+    <div class="step" id="p6">
+      <div class="step-head"><div class="num">6</div><div><h3>After each new lecture</h3></div></div>
+      <ol>
+        <li>Get that lecture's transcript and slides (tab ①).</li>
+        <li>Run step 1 on it and add the result to your doc.</li>
+        <li>Replace the doc in the project.</li>
+      </ol>
+    </div>
+  </section>
+
+  <footer>Lecture Grabber · runs in your browser · no data collected</footer>
+</main>
+
+<script type="application/json" id="tpl">__TEMPLATES__</script>
+<script>
+// ---------- Tabs (with #hash so links can open a tab) ----------
+const tabs=[...document.querySelectorAll('[role=tab]')];
+const panelFor=t=>document.getElementById(t.getAttribute('aria-controls'));
+function select(t,focus){
+  tabs.forEach(x=>{const on=x===t;x.setAttribute('aria-selected',on);x.tabIndex=on?0:-1;panelFor(x).hidden=!on;});
+  if(focus)t.focus();
+  const id=t.id==='t-project'?'#project':'#files'; const cur=location.hash; const inP=cur==='#project'||/^#p\d/.test(cur); if(!cur||inP!==(id==='#project')) history.replaceState(null,'',id);
+}
+tabs.forEach((t,i)=>{
+  t.addEventListener('click',()=>{select(t);window.scrollTo({top:0});});
+  t.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();select(tabs[(i+(e.key==='ArrowRight'?1:tabs.length-1))%tabs.length],true);}});
+});
+function fromHash(){
+  const h=location.hash.slice(1); if(!h) return;
+  const el=document.getElementById(h);
+  const inProject=h==='project'||(el&&el.closest('#p-project'));
+  select(inProject?tabs[1]:tabs[0]);
+  if(el&&h!=='project'&&h!=='files') setTimeout(()=>el.scrollIntoView(),0);
+}
+window.addEventListener('hashchange',fromHash); fromHash();
+
+// ---------- Paste box ----------
+const u=document.getElementById('u'),go=document.getElementById('go'),m=document.getElementById('m');
+function check(){
+  let ok=false,msg='';
+  try{const x=new URL(u.value.trim());ok=/panopto\.|canvas|instructure/i.test(x.hostname);if(!ok&&u.value)msg="That doesn't look like a Panopto or Canvas link.";}
+  catch{if(u.value.trim())msg='Paste a full link starting with https://';}
+  go.disabled=!ok;m.textContent=msg;m.className='msg'+(msg?' err':'');
+}
+u.addEventListener('input',check);
+document.getElementById('f').addEventListener('submit',e=>{
+  e.preventDefault();window.open(u.value.trim(),'_blank','noopener');
+  m.className='msg';m.textContent='Opened in a new tab. Once it loads, click '+(/panopto/i.test(u.value)?'“Get transcripts”':'“Get slides”')+' in your bookmarks bar.';
+});
+
+// ---------- SRT → Markdown ----------
+const fmt=s=>{const h=Math.floor(s/3600),mi=Math.floor(s%3600/60),x=s%60;return(h?h+':'+String(mi).padStart(2,'0'):mi)+':'+String(x).padStart(2,'0')};
+function srtToMd(srt){
+  const segs=[];
+  for(const b of srt.replace(/\r/g,'').split(/\n\n+/)){
+    const L=b.split('\n'),i=L.findIndex(l=>l.includes('-->'));if(i<0)continue;
+    const t=L[i].match(/(\d+):(\d+):(\d+)/)||L[i].match(/()(\d+):(\d+)/);
+    const s=(+t[1]||0)*3600+(+t[2])*60+(+t[3]);
+    const txt=L.slice(i+1).join(' ').replace(/<[^>]+>/g,'').replace(/\[Auto-generated transcript[^\]]*\]/i,'').trim();
+    if(txt)segs.push({s,txt});
+  }
+  const P=[];let c=null;for(const g of segs){if(!c||g.s-c.s>=120)P.push(c={s:g.s,t:[]});c.t.push(g.txt);}
+  return P.map(p=>`**[${fmt(p.s)}]** ${p.t.join(' ')}`).join('\n\n');
+}
+const drop=document.getElementById('drop'),pick=document.getElementById('pick');
+async function handle(files){
+  for(const f of files){
+    const md=`# ${f.name.replace(/\.(srt|vtt|txt)$/i,'')}\n\n${srtToMd(await f.text())}\n`;
+    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([md],{type:'text/markdown'}));
+    a.download=f.name.replace(/\.(srt|vtt|txt)$/i,'')+'.md';document.body.appendChild(a);a.click();a.remove();
+  }
+}
+drop.onclick=()=>pick.click();drop.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();pick.click();}};pick.onchange=()=>handle(pick.files);
+drop.ondragover=e=>{e.preventDefault();drop.classList.add('over')};
+drop.ondragleave=()=>drop.classList.remove('over');
+drop.ondrop=e=>{e.preventDefault();drop.classList.remove('over');handle(e.dataTransfer.files)};
+
+// ---------- Templates: copy / download / preview ----------
+const TPL=JSON.parse(document.getElementById('tpl').textContent);
+document.querySelectorAll('.acts[data-t]').forEach(box=>{
+  const name=box.dataset.t, text=TPL[name];
+  const mk=(label,cls,fn)=>{const b=document.createElement('button');b.type='button';b.textContent=label;if(cls)b.className=cls;b.onclick=()=>fn(b);box.appendChild(b);return b;};
+  const pre=document.createElement('pre');pre.className='tp';pre.textContent=text;
+  mk('Copy','',async b=>{try{await navigator.clipboard.writeText(text);}catch(e){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();}b.textContent='Copied ✓';setTimeout(()=>b.textContent='Copy',1600);});
+  mk('Download .md','ghost',()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'text/markdown'}));a.download=name.replace(/^\d-/,'');document.body.appendChild(a);a.click();a.remove();});
+  mk('Preview','ghost',b=>{pre.classList.toggle('show');b.textContent=pre.classList.contains('show')?'Hide preview':'Preview';});
+  box.after(pre);
+});
+</script>
+</body>
+</html>
