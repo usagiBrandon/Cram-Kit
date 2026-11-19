@@ -1,6 +1,8 @@
 # Cram-Kit
 How to skip class and have a 4.33 GPA (kinda) (method unpatched 2026)
 
+https://usagibrandon.github.io/Cram-Kit/
+
 Panopto transcript and Canvas slide grabber with instructions on how to create (and use) a Claude project for studying. 
 
 Main idea:
