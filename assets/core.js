@@ -389,7 +389,43 @@ function library(root) {
   root.innerHTML = LIBRARY.map(([sec, items]) => `<section class="ck-libsec"><h3 class="ck-sechead">${sec}</h3>${items.map(([name, id]) => id.startsWith('bm:') ?
     `<div class="ck-libitem"><span>${name}</span><a class="ck-bm small" href="${D.bm[id.slice(3)]}" data-bm draggable="true">⬇ Get ${id.slice(3)}</a></div>` :
     `<div class="ck-libitem"><span>${name}</span><span class="ck-row tight"><button type="button" class="ck-btn small primary" data-copy="${id}">${icon('copy')} Copy</button><button type="button" class="ck-btn small ghost" data-dl="${id}">${icon('download')}</button></span></div>`).join('')}</section>`).join('');
+  root.insertAdjacentHTML('beforeend', `<section class="ck-libsec"><h3 class="ck-sechead">Convert</h3>
+    <p class="ck-drop-info">Got <b>.srt</b> caption files (from Panopto, YouTube or Zoom) instead of transcripts? Drop them here to turn them into readable notes files (.md) with a timestamp every 2 minutes. Nothing is uploaded: it all happens in your browser.</p>
+    <div class="ck-drop" tabindex="0" role="button">${icon('download')} Drop .srt files here, or click to choose<input type="file" accept=".srt,.vtt,.txt" multiple hidden></div></section>`);
+  srtDrop(root.querySelector('.ck-drop'));
   bindActions(root);
+}
+
+// ---------- .srt captions → Markdown ----------
+const fmtT = s => { const h = Math.floor(s / 3600), mi = Math.floor(s % 3600 / 60), x = s % 60; return (h ? h + ':' + String(mi).padStart(2, '0') : mi) + ':' + String(x).padStart(2, '0'); };
+function srtToMd(srt) {
+  const segs = [];
+  for (const b of srt.replace(/\r/g, '').split(/\n\n+/)) {
+    const L = b.split('\n'), i = L.findIndex(l => l.includes('-->')); if (i < 0) continue;
+    const t = L[i].match(/(\d+):(\d+):(\d+)/) || L[i].match(/()(\d+):(\d+)/);
+    const s = (+t[1] || 0) * 3600 + (+t[2]) * 60 + (+t[3]);
+    const txt = L.slice(i + 1).join(' ').replace(/<[^>]+>/g, '').replace(/\[Auto-generated transcript[^\]]*\]/i, '').trim();
+    if (txt) segs.push({ s, txt });
+  }
+  const P = []; let c = null; for (const g of segs) { if (!c || g.s - c.s >= 120) P.push(c = { s: g.s, t: [] }); c.t.push(g.txt); }
+  return P.map(p => `**[${fmtT(p.s)}]** ${p.t.join(' ')}`).join('\n\n');
+}
+function srtDrop(drop) {
+  const pick = drop.querySelector('input');
+  async function handle(files) {
+    for (const f of files) {
+      const base = f.name.replace(/\.(srt|vtt|txt)$/i, '');
+      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([`# ${base}\n\n${srtToMd(await f.text())}\n`], { type: 'text/markdown' }));
+      a.download = base + '.md'; document.body.appendChild(a); a.click(); a.remove();
+    }
+    if (files.length) { drop.classList.add('done'); setTimeout(() => drop.classList.remove('done'), 1600); }
+  }
+  drop.onclick = e => { if (e.target !== pick) pick.click(); };
+  drop.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick.click(); } };
+  pick.onchange = () => { handle([...pick.files]); pick.value = ''; };
+  drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
+  drop.ondragleave = () => drop.classList.remove('over');
+  drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); handle([...e.dataTransfer.files]); };
 }
 
 // ---------- lofi: built-in generated music + your own files ----------

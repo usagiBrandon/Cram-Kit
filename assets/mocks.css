@@ -139,3 +139,10 @@
 @keyframes ckFlipB{0%,40%{transform:rotateY(180deg)}55%,100%{transform:rotateY(360deg)}}
 
 @media (prefers-reduced-motion:reduce){.ck-mock *,.ck-mock{animation:none!important}.ck-m-chip.new,.ck-m-toast,.ck-m-pop,.ck-m-block,.ck-m-files span,.ck-m-tag,.ck-m-stamp{opacity:1!important}.ck-m-typed,.ck-m-field{width:auto!important}.ck-m-cursor{display:none}}
+
+/* .srt converter drop zone (Prompts & buttons) */
+.ck-drop-info{margin:0 0 10px;max-width:62ch;opacity:.85}
+.ck-drop{display:flex;align-items:center;justify-content:center;gap:8px;border:2px dashed var(--line,#888);border-radius:12px;padding:22px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s}
+.ck-drop:hover,.ck-drop.over,.ck-drop:focus-visible{border-color:var(--accent,var(--pink,#ff3ea5))}
+.ck-drop.over{background:rgba(127,127,127,.12)}
+.ck-drop.done::after{content:"✓ downloaded";margin-left:6px;font-weight:700;color:var(--ok,#5fd394)}
