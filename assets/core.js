@@ -105,64 +105,105 @@ const MOCKS = {
   ask: () => `<div class="ck-mock ck-m-chat" aria-hidden="true"><div class="ck-m-msgs"><i class="me q">What happened in Lecture 7?</i><i class="a"></i><i class="a2"></i><span class="ck-m-tag">🎯 on the exam · L7 23:10</span></div></div>`,
   exam: () => `<div class="ck-mock ck-m-card" aria-hidden="true"><div class="ck-m-papers"><i></i><i></i><i></i></div><div class="ck-m-bars"><i style="--h:90%"></i><i style="--h:70%"></i><i style="--h:55%"></i><i style="--h:35%"></i><i style="--h:20%"></i></div></div>`,
   practice: () => `<div class="ck-mock ck-m-card" aria-hidden="true"><div class="ck-m-doc big"><b>Practice Midterm</b><i></i><i class="hl"></i><i></i><i></i></div><div class="ck-m-score">82%</div></div>`,
+  test: () => `<div class="ck-mock ck-m-test" aria-hidden="true"><div class="ck-m-tq">Setup check for ${esc((course().code || 'PSYC 101').trim())}…</div><div class="ck-m-ta"><b>${icon('check')} I can see your files</b><i>Lecture notes · L1–12</i><i>Slides · 12 PDFs</i><p>Ready to be your tutor! What do you want to start with?</p><div class="ck-m-opts"><span>Anki cards</span><span>Study guide</span><span>Exam analysis</span><span>Practice test</span></div></div></div>`,
+  guide: () => `<div class="ck-mock ck-m-sg" aria-hidden="true"><div class="ck-m-toc"><i class="on"></i><i></i><i class="hot"></i><i></i><i></i></div><div class="ck-m-sgmain"><b>4.2 Action potentials</b><div class="ck-m-graph"><svg viewBox="0 0 100 40" preserveAspectRatio="none"><path d="M0 32 L30 32 L38 4 L46 38 L54 30 L100 32" fill="none" stroke="currentColor" stroke-width="2"/></svg></div><div class="ck-m-slider"><i></i></div><span class="ck-m-flag">🎯 On the exam</span></div></div>`,
+  plan: () => `<div class="ck-mock ck-m-card" aria-hidden="true"><div class="ck-m-cal">${Array.from({ length: 14 }, (_, k) => `<i style="--d:${k}" class="${k === 13 ? 'x' : ''}">${k === 13 ? 'EXAM' : 20 + (k % 3) * 5}</i>`).join('')}</div></div>`,
   anki: () => `<div class="ck-mock ck-m-card" aria-hidden="true"><div class="ck-m-flip"><div class="ck-m-face front">The {{c1::…}} makes ATP</div><div class="ck-m-face back">mitochondria</div></div></div>`
 };
 
-// ---------- the steps ----------
+// ---------- phase 1: set up your project (a tick-box path that ends with a test message) ----------
 // done: 'check' (tick box) · 'course' (needs a course code) · 'device' (auto)
+const TEST = `Setup check for [COURSE CODE]. Please:
+1. List the files you can see in this project, grouped into lecture notes, slides and anything else.
+2. Tell me which lectures the notes cover, and point out anything that looks missing.
+3. Confirm in one line that you're ready to be my tutor for this course.
+Then ask me what I want to start with, and offer these options: Anki flashcards, an interactive study guide, a past-exam analysis, a practice test, or catching up on a lecture.`;
+const testPrompt = () => fill(TEST).split('[COURSE CODE]').join('my course');
 const STEPS = [
-  { id: 'course', sec: 'Start', title: 'Tell us about your course', mock: 'course', done: 'course',
+  { id: 'course', sec: 'Your course', title: 'Tell us about your course', mock: 'course', done: 'course',
     lead: 'We put this into every prompt for you, so you never fill in [brackets].', form: 'course' },
-  { id: 'syllabus', sec: 'Start', title: 'Check your syllabus', mock: 'syllabus', check: 'I checked my syllabus',
+  { id: 'syllabus', sec: 'Your course', title: 'Check your syllabus', mock: 'syllabus', check: 'I checked my syllabus',
     lead: 'Some profs don\'t allow lecture recordings or transcripts in AI tools.',
     steps: ['Search your syllabus for "AI", "ChatGPT" or "recordings".', 'If they\'re not allowed, skip the transcript steps and use slides only. Everything still works.'] },
-  { id: 'device', sec: 'Start', title: 'Use a laptop with Chrome or Edge', mock: 'device', done: 'device',
+  { id: 'device', sec: 'Your course', title: 'Use a laptop with Chrome or Edge', mock: 'device', done: 'device',
     lead: 'The download buttons only work in a desktop browser.' },
-  { id: 'bar', sec: 'Gather', title: 'Show your bookmarks bar', mock: 'keys', check: 'I can see the bookmarks bar under the address bar',
+  { id: 'bar', sec: 'Get your files', title: 'Show your bookmarks bar', mock: 'keys', check: 'I can see the bookmarks bar under the address bar',
     lead: `Press <kbd>${env.mod}</kbd> + <kbd>Shift</kbd> + <kbd>B</kbd>. A thin bar appears under the address bar.`,
     help: 'Nothing changed? It may already be showing (look under the address bar). Or press the keys again: it toggles on and off.' },
-  { id: 'dragT', sec: 'Gather', title: 'Drag “Get transcripts” to the bar', mock: 'dragT', bm: 'transcripts', check: '⬇ Get transcripts is in my bookmarks bar',
+  { id: 'dragT', sec: 'Get your files', title: 'Drag “Get transcripts” to the bar', mock: 'dragT', bm: 'transcripts', check: '⬇ Get transcripts is in my bookmarks bar',
     lead: 'Press and hold the button below, move it up onto the bookmarks bar, and let go. Don\'t just click it.',
     help: 'Can\'t drag? Right-click the bookmarks bar → <b>Add page…</b> → name it <i>Get transcripts</i> → paste the code from the copy button below into the URL box.', helpCopy: 'transcripts' },
-  { id: 'dragS', sec: 'Gather', title: 'Drag “Get slides” to the bar', mock: 'dragS', bm: 'slides', check: '⬇ Get slides is in my bookmarks bar',
+  { id: 'dragS', sec: 'Get your files', title: 'Drag “Get slides” to the bar', mock: 'dragS', bm: 'slides', check: '⬇ Get slides is in my bookmarks bar',
     lead: 'Same thing for the slides button.',
     help: 'Right-click the bookmarks bar → <b>Add page…</b> → name it <i>Get slides</i> → paste the code from the copy button below.', helpCopy: 'slides' },
-  { id: 'panopto', sec: 'Gather', title: 'Download the transcripts', mock: 'panopto', open: 'Panopto', check: 'A transcripts zip downloaded',
+  { id: 'panopto', sec: 'Get your files', title: 'Download the transcripts', mock: 'panopto', open: 'Panopto', check: 'A transcripts zip downloaded',
     lead: 'In a new tab, open your course\'s Panopto folder and wait for the list of lectures to load.',
     steps: ['Click <b>⬇ Get transcripts</b> in your bookmarks bar.', 'A zip file downloads. Double-click it to open the folder.'],
-    help: '“No recordings found”: the list hasn\'t loaded yet, or you\'re not on a folder page. More than 25 lectures? Set <i>Results per page</i> to the max first.' },
-  { id: 'canvas', sec: 'Gather', title: 'Download the slides', mock: 'canvas', open: 'Canvas', check: 'My slides downloaded',
+    help: '“No recordings found”: the list hasn\'t loaded yet, or you\'re not on a folder page. More than 25 lectures? Set <i>Results per page</i> to the max first. Got .srt caption files instead? Convert them under Prompts &amp; buttons → Convert.' },
+  { id: 'canvas', sec: 'Get your files', title: 'Download the slides', mock: 'canvas', open: 'Canvas', check: 'My slides downloaded',
     lead: 'Open any page of your course on Canvas, then click <b>⬇ Get slides</b>.',
     steps: ['Pick <b>Best version</b> and press <b>Download</b>.', 'Only one file came down? Click the blocked-download icon at the right of the address bar → <b>Always allow</b> → press <b>Retry</b>.'],
     help: 'No files listed? Your prof may host slides somewhere else. Check “External links” in the pop-up.' },
-  { id: 'notes', sec: 'Claude', title: 'Turn lectures into a notes file', mock: 'chat', check: 'I have my lecture notes file',
+  { id: 'notes', sec: 'Make your notes', title: 'Turn lectures into one notes file', mock: 'chat', check: 'I have my lecture notes file',
     lead: 'Claude reads 2–4 lectures at a time and writes one page per lecture: what happened, what was said beyond the slides, and what\'s on the exam.',
     steps: ['Go to <a href="https://claude.ai/new" target="_blank" rel="noopener">claude.ai</a> → new chat (not inside a project).', 'Attach the transcripts and slides for 2–4 lectures.', 'Paste the prompt and send. Type <code>continue</code> if it stops.', 'Paste the result into the notes file. Repeat for the next lectures.'],
     copy: ['1-context-builder-prompt.md', 'Copy the notes prompt'], dl: ['0-context-doc-skeleton.md', 'Download the notes file'] },
-  { id: 'project', sec: 'Claude', title: 'Create your Claude project', mock: 'project', check: 'My project has the tutor instructions',
+  { id: 'project', sec: 'Set up Claude', title: 'Create your Claude project', mock: 'project', check: 'My project has the tutor instructions',
     lead: 'A project is a folder in Claude that remembers your course.',
     steps: ['In Claude: <b>Projects</b> → <b>New project</b>. Name it after the course.', 'Copy the tutor instructions and paste them into the project\'s <b>Instructions</b>.'],
     copy: ['2-project-instructions.md', 'Copy tutor instructions'] },
-  { id: 'upload', sec: 'Claude', title: 'Add your files to the project', mock: 'upload', check: 'Files are uploaded',
+  { id: 'upload', sec: 'Set up Claude', title: 'Add your files to the project', mock: 'upload', check: 'My files are in the project',
     lead: 'Use the project\'s <b>Files</b> section.',
     steps: ['✓ Your lecture notes file (the important one)', '✓ Slides as PDF', '✓ Learning objectives, if you have them', '✗ Not the raw transcripts. The notes file replaces them.'],
     help: 'On the free plan, if the capacity bar goes over 100%, remove slides first and keep the notes file.' },
-  { id: 'ask', sec: 'Claude', title: 'Ask it something', mock: 'ask', check: 'I tried it',
-    lead: 'Start a new chat inside the project and try one of these:',
-    try: ['What happened in Lecture 7?', 'I missed class on Oct 20, catch me up', 'Quiz me on Lectures 10–12, exam style', 'What\'s on the exam? Make a checklist'] },
-  { id: 'papers', sec: 'Exam prep', title: 'Find the key exam topics', mock: 'exam', check: 'I saved my exam blueprint to the project',
-    lead: 'Collect past exams, quizzes and practice midterms. Claude ranks what gets tested, and down-weights practice that doesn\'t look like the real exam.',
-    steps: ['New chat in your project. Attach every past paper you have.', 'Paste the prompt and send.', 'Save the result as <b>Exam blueprint</b> in the project\'s Files.'],
-    copy: ['5-exam-analysis-prompt.md', 'Copy the analysis prompt'] },
-  { id: 'practice', sec: 'Exam prep', title: 'Take a practice exam', mock: 'practice', check: 'I did a practice exam',
-    lead: 'Same format as the real one, new questions, answer key kept separate.',
-    steps: ['Paste the prompt in a new project chat.', 'Do it timed, without notes.', 'Send your answers. Claude marks them and turns mistakes into flashcards.'],
-    copy: ['6-practice-exam-prompt.md', 'Copy the practice exam prompt'] },
-  { id: 'anki', sec: 'Anki', title: 'Make flashcards', mock: 'anki', check: 'My deck is in Anki',
-    lead: 'Get Anki free at <a href="https://apps.ankiweb.net" target="_blank" rel="noopener">apps.ankiweb.net</a>, then let Claude write the cards.',
-    steps: ['Paste the prompt in a new project chat, one unit at a time.', 'Double-click the <code>.apkg</code> file Claude gives you. Done.', 'Want a study plan and cards tuned to you? Open the Anki planner in Tools.'],
-    copy: ['4-anki-deck-prompt.md', 'Copy the Anki prompt'], tool: 'anki' }
+  { id: 'test', sec: 'Set up Claude', title: 'Send the test message', mock: 'test', check: 'Claude listed my files and asked what I want to start with',
+    lead: 'This checks that Claude can see everything. It lists your files, says it\'s ready, and asks what you want to make first.',
+    steps: ['Copy the test message.', 'In your project, start a <b>new chat</b>, paste it and send.', 'Claude names your files and asks what you want to start with. If a file is missing, add it to the project and send the test again.'],
+    copyText: ['test', 'Copy the test message'] }
 ];
+
+// ---------- phase 2: what your project can make ----------
+const RECIPES = [
+  { id: 'anki', title: 'Anki flashcards', short: 'A deck you import in one click', mock: 'anki',
+    lead: 'Claude writes the cards from your notes, in the style of the big MCAT decks, and gives you a file Anki opens directly.',
+    steps: ['Get Anki free at <a href="https://apps.ankiweb.net" target="_blank" rel="noopener">apps.ankiweb.net</a>.', 'In your project, start a new chat. Paste the prompt and name one unit (e.g. Lectures 4–6).', 'Double-click the <code>.apkg</code> file Claude gives you. The deck appears in Anki.'],
+    copy: ['4-anki-deck-prompt.md', 'Copy the Anki prompt'], tool: 'anki', toolLabel: 'Tune it with the study planner' },
+  { id: 'guide', title: 'Interactive study guide', short: 'A clickable guide for one unit', mock: 'guide',
+    lead: 'A page you click through: plain-language explanations, diagrams, exam flags, and sliders or quizzes where they help.',
+    steps: ['New chat in your project for each unit.', 'Paste the prompt and name the unit (e.g. Lectures 4–6).', 'Open the guide Claude makes. If it stops early, type <code>continue</code>.'],
+    copy: ['3-study-guide-prompt.md', 'Copy the study guide prompt'] },
+  { id: 'exam', title: 'Exam analysis', short: 'What actually gets tested', mock: 'exam',
+    lead: 'Give Claude your past exams and quizzes. It ranks topics by how often and how they get tested, and down-weights practice that doesn\'t look like the real exam.',
+    steps: ['New chat in your project. Attach every past paper you have.', 'Paste the prompt and send.', 'Save the result as <b>Exam blueprint</b> in the project\'s Files, so every later chat uses it.'],
+    copy: ['5-exam-analysis-prompt.md', 'Copy the exam analysis prompt'] },
+  { id: 'practice', title: 'Practice test', short: 'Same format as the real one', mock: 'practice',
+    lead: 'A new test in the exact format of your exam, with the answer key kept separate. Claude marks it and turns mistakes into flashcards.',
+    steps: ['Paste the prompt in a new project chat.', 'Do it timed, without notes.', 'Send your answers back. Claude marks them and explains each mistake.'],
+    copy: ['6-practice-exam-prompt.md', 'Copy the practice test prompt'] },
+  { id: 'ask', title: 'Ask & catch up', short: 'Missed a class? Just ask', mock: 'ask',
+    lead: 'Your project knows every lecture. Start a new chat in it and ask like you would a tutor. Tap one to copy it:',
+    try: ['What happened in Lecture 7?', 'I missed class on Oct 20, catch me up', 'Quiz me on Lectures 10–12, exam style', 'What\'s on the exam? Make a checklist', 'Explain this like I\'m 12, then like the exam would ask it'] },
+  { id: 'plan', title: 'Study planner', short: 'Cards per day until exam day', mock: 'plan', tool: 'anki', toolLabel: 'Open the study planner',
+    lead: 'Answer a few questions and get a day-by-day Anki plan, the right Anki settings, and a deck prompt tuned to your weak spots. Exam tomorrow? Press SUPER CRAM.' }
+];
+const recipeById = id => RECIPES.find(r => r.id === id);
+function recipesHTML(sel) {
+  const r = sel && recipeById(sel);
+  if (r) return `<div class="ck-recipe"><button type="button" class="ck-btn ghost small" data-rback>${icon('left')} All options</button>${stepHTML(r, 0, 0, {})}</div>`;
+  return `<div class="ck-recipes">${RECIPES.map((x, j) => `<button type="button" class="ck-rcard" data-recipe="${x.id}"><span class="ck-rnum">${String(j + 1).padStart(2, '0')}</span><b>${x.title}</b><span>${x.short}</span><span class="ck-rgo">Show me ${icon('right')}</span></button>`).join('')}</div>`;
+}
+// standalone "make" view (used by the home menu)
+function recipes(root, opts = {}) {
+  let sel = opts.start || null;
+  const render = () => { root.innerHTML = (sel ? '' : `<h2 class="ck-title">What you can make</h2><p class="ck-lead ck-makelead">Each one is a prompt you paste into a new chat inside your Claude project. Pick one to see how.</p>`) + recipesHTML(sel); opts.onRender && opts.onRender(sel); };
+  root.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.recipe) { sel = b.dataset.recipe; render(); }
+    else if (b.hasAttribute('data-rback')) { sel = null; render(); }
+  });
+  bindActions(root, opts); render();
+  return { show(id) { sel = id; render(); } };
+}
 
 // ---------- wizard (slideshow + single-page list) ----------
 function stepDone(s, done) {
@@ -192,18 +233,18 @@ function deviceBody() {
     <button type="button" class="ck-btn" data-copylink>${icon('copy')} Copy this page's link</button>`;
 }
 function stepHTML(s, i, n, done) {
-  const isDone = stepDone(s, done);
   let h = `<div class="ck-step" data-step="${s.id}"><div class="ck-step-text">
-    <h2 class="ck-title">${s.title}</h2>${s.lead ? `<p class="ck-lead">${s.lead}</p>` : ''}`;
+    <h2 class="ck-title" tabindex="-1">${s.title}</h2>${s.lead ? `<p class="ck-lead">${s.lead}</p>` : ''}`;
   if (s.form === 'course') h += courseForm();
   if (s.done === 'device') h += deviceBody();
   if (s.bm) h += `<div class="ck-row"><a class="ck-bm" draggable="true" href="${D.bm[s.bm]}" data-bm>⬇ Get ${s.bm}</a><span class="ck-hint">${icon('left')} drag me up</span></div>`;
   if (s.open) h += `<form class="ck-open" data-open><input type="url" placeholder="Paste your ${s.open} link (optional)" aria-label="${s.open} link"><button class="ck-btn ghost">${icon('open')} Open</button></form>`;
   if (s.steps) h += `<ol class="ck-list">${s.steps.map(x => `<li>${x}</li>`).join('')}</ol>`;
   if (s.try) h += `<div class="ck-try">${s.try.map(q => `<button type="button" class="ck-chip" data-copytext="${esc(q)}">${esc(q)} ${icon('copy')}</button>`).join('')}</div>`;
-  if (s.copy || s.dl) h += `<div class="ck-row">${s.copy ? `<button type="button" class="ck-btn primary" data-copy="${s.copy[0]}">${icon('copy')} ${s.copy[1]}</button>` : ''}${s.dl ? `<button type="button" class="ck-btn ghost" data-dl="${s.dl[0]}">${icon('download')} ${s.dl[1]}</button>` : ''}${s.copy ? `<button type="button" class="ck-btn ghost" data-peek="${s.copy[0]}">Preview</button>` : ''}</div><pre class="ck-pre" hidden></pre>`;
-  if (s.copy && (course().code || '').trim()) h += `<p class="ck-note">${icon('check')} Already filled in with ${esc(course().code)}.</p>`;
-  if (s.tool) h += `<button type="button" class="ck-btn ghost" data-tool="${s.tool}">${icon('tools')} Open the Anki planner</button>`;
+  if (s.copyText) h += `<pre class="ck-pre ck-testmsg">${esc(testPrompt())}</pre><div class="ck-row"><button type="button" class="ck-btn primary" data-copytext="${esc(testPrompt())}">${icon('copy')} ${s.copyText[1]}</button></div>`;
+  if (s.copy || s.dl) h += `<div class="ck-row">${s.copy ? `<button type="button" class="ck-btn primary" data-copy="${s.copy[0]}">${icon('copy')} ${s.copy[1]}</button>` : ''}${s.dl ? `<button type="button" class="ck-btn ghost" data-dl="${s.dl[0]}">${icon('download')} ${s.dl[1]}</button>` : ''}${s.copy ? `<button type="button" class="ck-btn ghost" data-peek="${s.copy[0]}">Preview</button>` : ''}</div><pre class="ck-pre" data-peekbox hidden></pre>`;
+  if ((s.copy || s.copyText) && (course().code || '').trim()) h += `<p class="ck-note">${icon('check')} Already filled in with ${esc(course().code)}.</p>`;
+  if (s.tool) h += `<div class="ck-row"><button type="button" class="ck-btn ${s.copy ? 'ghost' : 'primary'}" data-tool="${s.tool}">${icon('tools')} ${s.toolLabel || 'Open the Anki planner'}</button></div>`;
   if (s.check || (s.done === 'device' && !env.ok)) h += `<label class="ck-done"><input type="checkbox" data-done="${s.id}" ${done[s.id] ? 'checked' : ''}><span class="ck-box">${icon('check')}</span><span>${s.check || 'I\'ll use a laptop with Chrome or Edge'}</span></label>`;
   if (s.help) h += `<details class="ck-help"><summary>${icon('help')} Stuck?</summary><p>${s.help}</p>${s.helpCopy ? `<button type="button" class="ck-btn ghost small" data-copybm="${s.helpCopy}">${icon('copy')} Copy the button's code</button>` : ''}</details>`;
   h += `</div><div class="ck-step-visual">${MOCKS[s.mock] ? MOCKS[s.mock]() : ''}</div></div>`;
@@ -217,7 +258,7 @@ function bindActions(root, opts = {}) {
     else if (b.dataset.copytext) { await copy(b.dataset.copytext); flash('Copied'); }
     else if (b.dataset.copybm) { await copy(D.bm[b.dataset.copybm]); flash('Copied'); }
     else if (b.dataset.dl) download(b.dataset.dl.replace(/^\d-/, ''), prompt(b.dataset.dl));
-    else if (b.dataset.peek) { const pre = b.closest('.ck-step-text,.ck-card').querySelector('.ck-pre'); pre.hidden = !pre.hidden; pre.textContent = prompt(b.dataset.peek); b.textContent = pre.hidden ? 'Preview' : 'Hide'; }
+    else if (b.dataset.peek) { const pre = b.closest('.ck-step-text,.ck-card').querySelector('[data-peekbox]'); pre.hidden = !pre.hidden; pre.textContent = prompt(b.dataset.peek); b.textContent = pre.hidden ? 'Preview' : 'Hide'; }
     else if (b.dataset.tool) { opts.onTool && opts.onTool(b.dataset.tool); }
     else if (b.hasAttribute('data-copylink')) { await copy(location.href); flash('Link copied'); }
     else if (b.hasAttribute('data-bm')) { e.preventDefault(); b.classList.add('nudge'); setTimeout(() => b.classList.remove('nudge'), 900); opts.onBmClick && opts.onBmClick(b); }
@@ -231,24 +272,34 @@ function bindActions(root, opts = {}) {
 function wizard(root, opts = {}) {
   const MK = opts.modeKey || 'mode';
   let done = store.get('done', {}), i = Math.min(store.get('step', 0), STEPS.length - 1), mode = store.get(MK, opts.defaultMode || 'slides');
+  let ph = progress().next < 0 ? 2 : 1, sel = null;
   const sections = [...new Set(STEPS.map(s => s.sec))];
   function save() { store.set('done', done); store.set('step', i); store.set(MK, mode); }
   function render() {
     const n = STEPS.length, s = STEPS[i], ok = stepDone(s, done);
+    const count = STEPS.filter(x => stepDone(x, done)).length, ready = count === n;
+    const phases = `<div class="ck-phases" role="tablist" aria-label="Phases">
+      <button type="button" role="tab" data-phase="1" aria-selected="${ph === 1}"><span class="ck-pn">1</span><span><b>Set up your project</b><small>${ready ? 'Done' : `${count} of ${n} steps · about 30 min`}</small></span></button>
+      <button type="button" role="tab" data-phase="2" aria-selected="${ph === 2}"><span class="ck-pn">2</span><span><b>What you can make</b><small>${ready ? 'Ready' : 'Unlocks after setup'}</small></span></button></div>`;
+    if (ph === 2) {
+      root.dataset.mode = 'make';
+      root.innerHTML = phases + `<div class="ck-make">${sel ? '' : `<p class="ck-lead ck-makelead">${ready ? 'Your project is set up. Pick what you want to make: each one is a prompt you paste into a new chat in your project.' : 'A preview of what your project can make once it\'s set up. Finish phase 1 first so Claude has your notes.'}</p>`}${recipesHTML(sel)}</div>`;
+      opts.onRender && opts.onRender(-1, 'make'); return;
+    }
     root.dataset.mode = mode;
-    const count = STEPS.filter(x => stepDone(x, done)).length;
     const nav = `<nav class="ck-steps" aria-label="All steps">${sections.map(sec => `<div class="ck-sec"><b>${sec}</b>${STEPS.map((x, j) => x.sec !== sec ? '' : `<button type="button" class="ck-sl ${j === i && mode === 'slides' ? 'on' : ''} ${stepDone(x, done) ? 'did' : ''}" data-go="${j}"><span class="ck-dot">${stepDone(x, done) ? icon('check') : j + 1}</span>${x.title}</button>`).join('')}</div>`).join('')}</nav>`;
-    const head = `<div class="ck-head"><div class="ck-prog" role="progressbar" aria-valuemin="0" aria-valuemax="${n}" aria-valuenow="${count}" aria-label="Steps done"><i style="width:${count / n * 100}%"></i></div>
+    const head = phases + `<div class="ck-head"><div class="ck-prog" role="progressbar" aria-valuemin="0" aria-valuemax="${n}" aria-valuenow="${count}" aria-label="Setup steps done"><i style="width:${count / n * 100}%"></i></div>
       <div class="ck-modes" role="group" aria-label="View"><button type="button" data-mode="slides" aria-pressed="${mode === 'slides'}">${icon('slides')} One step at a time</button><button type="button" data-mode="list" aria-pressed="${mode === 'list'}">${icon('list')} All steps on one page</button></div></div>`;
     if (mode === 'list') {
-      root.innerHTML = head + `<div class="ck-all">${sections.map(sec => `<section class="ck-allsec"><h3 class="ck-sechead">${sec}</h3>${STEPS.map((x, j) => x.sec !== sec ? '' : `<div class="ck-card ${stepDone(x, done) ? 'did' : ''}"><span class="ck-num">${j + 1}</span>${stepHTML(x, j, n, done)}</div>`).join('')}</section>`).join('')}</div>`;
+      root.innerHTML = head + `<div class="ck-all">${sections.map(sec => `<section class="ck-allsec"><h3 class="ck-sechead">${sec}</h3>${STEPS.map((x, j) => x.sec !== sec ? '' : `<div class="ck-card ${stepDone(x, done) ? 'did' : ''}"><span class="ck-num">${j + 1}</span>${stepHTML(x, j, n, done)}</div>`).join('')}</section>`).join('')}
+        <div class="ck-row ck-endrow"><button type="button" class="ck-btn primary" data-phase="2">${ready ? 'Setup done: see what you can make' : 'Preview what you can make'} ${icon('right')}</button></div></div>`;
     } else {
       root.innerHTML = head + `<div class="ck-wiz">${nav}<div class="ck-stage">
-        <div class="ck-count">Step ${i + 1} of ${n} · ${s.sec}</div>
+        <div class="ck-count">Setup · step ${i + 1} of ${n} · ${s.sec}</div>
         <div class="ck-slide" key="${s.id}">${stepHTML(s, i, n, done)}</div>
         <div class="ck-nav"><button type="button" class="ck-btn ghost" data-prev ${i ? '' : 'disabled'}>${icon('left')} Back</button>
           <span class="ck-gate">${ok ? '' : (s.done === 'course' ? 'Add your course to continue' : 'Tick the box when you\'ve done it')}</span>
-          <button type="button" class="ck-btn primary" data-next ${ok ? '' : 'disabled'}>${i === n - 1 ? 'Finish' : 'Next'} ${icon('right')}</button></div></div></div>`;
+          <button type="button" class="ck-btn primary" data-next ${ok ? '' : 'disabled'}>${i === n - 1 ? 'Finish setup' : 'Next'} ${icon('right')}</button></div></div></div>`;
     }
     bindCourse(root, () => { const nb = $('[data-next]', root); const ok2 = stepDone(STEPS[i], done); if (nb) { nb.disabled = !ok2; $('.ck-gate', root).textContent = ok2 ? '' : 'Add your course to continue'; } opts.onCourse && opts.onCourse(); });
     opts.onRender && opts.onRender(i, mode);
@@ -262,16 +313,19 @@ function wizard(root, opts = {}) {
   });
   root.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
-    if (b.dataset.go != null) { i = +b.dataset.go; mode = 'slides'; save(); render(); }
+    if (b.dataset.phase) { ph = +b.dataset.phase; sel = null; render(); root.scrollIntoView?.({ block: 'start' }); }
+    else if (b.dataset.recipe) { sel = b.dataset.recipe; render(); }
+    else if (b.hasAttribute('data-rback')) { sel = null; render(); }
+    else if (b.dataset.go != null) { i = +b.dataset.go; mode = 'slides'; save(); render(); }
     else if (b.dataset.mode) { mode = b.dataset.mode; save(); render(); }
-    else if (b.hasAttribute('data-next')) { if (i < STEPS.length - 1) { i++; save(); render(); $('.ck-title', root)?.focus?.(); } else opts.onFinish && opts.onFinish(); }
+    else if (b.hasAttribute('data-next')) { if (i < STEPS.length - 1) { i++; save(); render(); $('.ck-title', root)?.focus?.(); } else { ph = 2; render(); opts.onFinish && opts.onFinish(); } }
     else if (b.hasAttribute('data-prev')) { i = Math.max(0, i - 1); save(); render(); }
   });
   bindActions(root, opts);
   render();
-  return { render, go(j) { i = j; mode = 'slides'; save(); render(); }, progress };
+  return { render, go(j) { i = j; ph = 1; mode = 'slides'; save(); render(); }, phase(p, r) { ph = p; sel = r || null; render(); }, progress };
 }
-function progress() { const done = store.get('done', {}); const n = STEPS.filter(s => stepDone(s, done)).length; const next = STEPS.findIndex(s => !stepDone(s, done)); return { done: n, total: STEPS.length, next, nextTitle: next >= 0 ? STEPS[next].title : null }; }
+function progress() { const done = store.get('done', {}); const n = STEPS.filter(s => stepDone(s, done)).length; const next = STEPS.findIndex(s => !stepDone(s, done)); return { done: n, total: STEPS.length, next, nextTitle: next >= 0 ? STEPS[next].title : null, ready: next < 0 }; }
 
 // ---------- Anki planner + personalized prompt + SUPER CRAM ----------
 const PER_LEC = { key: 15, exam: 30, all: 50 };
@@ -501,5 +555,5 @@ const Lofi = (() => {
   return { play, stop, toggle: () => playing ? stop() : play(), next, prev, setVolume, state, on: f => { listeners.push(f); f(state()); } };
 })();
 
-window.CK = { D, $, $$, esc, store, env, icon, copy, download, course, fill, prompt, body, daysToExam, STEPS, wizard, progress, ankiTool, library, Lofi, bindCourse, courseForm, bindActions };
+window.CK = { D, $, $$, esc, store, env, icon, copy, download, course, fill, prompt, body, daysToExam, STEPS, RECIPES, recipes, wizard, progress, ankiTool, library, Lofi, bindCourse, courseForm, bindActions };
 })();

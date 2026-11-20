@@ -6,7 +6,7 @@
 <title>Cram-Kit · Simple</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/mocks.css">
+<link rel="stylesheet" href="assets/mocks.css?v=6">
 <style>
 :root{--bg:#f7f6f2;--card:#fff;--ink:#16161a;--muted:#55555f;--line:#dedcd4;--accent:#c2185b;--accent-ink:#fff;--ok:#1b7f4b;--ok-bg:#eaf6ef;--warn:#8a4500;--warn-bg:#fff2e0;--soft:#fbe9f0}
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#121214;--card:#1b1b1f;--ink:#efeef3;--muted:#a9a8b3;--line:#2e2e35;--accent:#ff6fa8;--accent-ink:#16161a;--ok:#5fd394;--ok-bg:#16291f;--warn:#ffb36b;--warn-bg:#2b2116;--soft:#2a1a22}}
@@ -95,6 +95,20 @@ code{font:15px ui-monospace,Menlo,monospace;background:var(--line);padding:1px 6
 .ck-table small{display:block;color:var(--muted)}
 .ck-libitem{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;margin-bottom:8px;border:2px solid var(--line);border-radius:12px;background:var(--card)}
 @media (max-width:640px){.ck-form,.ck-aform{grid-template-columns:1fr}.ck-title{font-size:25px}}
+/* phases + what you can make */
+.ck-phases{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 18px}
+.ck-phases button{display:flex;gap:12px;align-items:center;text-align:left;padding:12px 16px;border-radius:14px;border:2px solid var(--line);background:var(--card);color:var(--ink);font:inherit;cursor:pointer}
+.ck-phases button[aria-selected=true]{border-color:var(--accent);background:var(--soft)}
+.ck-phases b{display:block;font-size:18px}.ck-phases small{display:block;color:var(--muted);font-size:15px}
+.ck-pn{flex:none;width:36px;height:36px;display:grid;place-items:center;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-weight:700}
+.ck-makelead{margin:0 0 16px!important}
+.ck-recipes{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.ck-rcard{display:grid;gap:4px;align-content:start;text-align:left;padding:18px;border-radius:16px;border:2px solid var(--line);background:var(--card);color:var(--ink);font:inherit;cursor:pointer}
+.ck-rcard:hover{border-color:var(--accent)}
+.ck-rnum{font-weight:700;color:var(--accent);font-size:15px}.ck-rcard b{font-size:21px;line-height:1.2}.ck-rcard span{color:var(--muted)}
+.ck-rcard .ck-rgo{display:inline-flex;gap:6px;align-items:center;margin-top:8px;color:var(--accent);font-weight:700}
+.ck-recipe .ck-step{margin-top:12px}.ck-endrow{justify-content:center;margin:20px 0}
+@media (max-width:640px){.ck-phases{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -111,7 +125,7 @@ code{font:15px ui-monospace,Menlo,monospace;background:var(--line);padding:1px 6
   <section class="pane" id="p-lib" hidden><div id="lib"></div></section>
 </main>
 <script src="assets/data.js"></script>
-<script src="assets/core.js"></script>
+<script src="assets/core.js?v=6"></script>
 <script>
 const {$,$$}=CK;
 let anki;
